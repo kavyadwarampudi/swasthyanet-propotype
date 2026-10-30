@@ -1,0 +1,2827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+  <meta name="theme-color" content="#0284c7">
+  <meta name="description" content="SwasthyaNet - Standalone Offline-First Rural Health Triage Prototype">
+  <title>SwasthyaNet • Offline Rural Health Triage (Standalone Prototype)</title>
+  <style>
+    /* ==========================================================================
+       SwasthyaNet - Clean Professional Light Mode (High Daylight Contrast)
+       ========================================================================== */
+    :root {
+      /* Core Clinical Palette */
+      --primary: #0284c7;
+      --primary-hover: #0369a1;
+      --primary-light: #e0f2fe;
+      --secondary: #0f766e;
+      --secondary-light: #ccfbf1;
+      
+      /* Deterministic Triage Colors */
+      --triage-red: #dc2626;
+      --triage-red-light: #fee2e2;
+      --triage-yellow: #d97706;
+      --triage-yellow-light: #fef3c7;
+      --triage-green: #16a34a;
+      --triage-green-light: #dcfce7;
+      
+      /* Clean Professional Light Mode Defaults */
+      --bg-app: #f8fafc;
+      --bg-gradient: #f8fafc;
+      --surface-card: #ffffff;
+      --surface-card-hover: #f1f5f9;
+      --surface-glass: #ffffff;
+      --surface-input: #ffffff;
+      --border-glass: #cbd5e1;
+      --border-focus: #0284c7;
+      
+      --text-main: #0f172a;
+      --text-muted: #334155;
+      --text-dim: #64748b;
+      --text-inverse: #ffffff;
+
+      --shadow-card: 0 4px 12px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.03);
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 18px;
+      --radius-full: 9999px;
+      --touch-target-min: 48px;
+      --font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    /* Outdoor Max-Contrast Sunlight Mode */
+    body.sunlight-mode {
+      --bg-app: #ffffff;
+      --bg-gradient: #ffffff;
+      --surface-card: #ffffff;
+      --surface-card-hover: #f8fafc;
+      --surface-glass: #ffffff;
+      --surface-input: #ffffff;
+      --border-glass: #000000;
+      --border-focus: #000000;
+      --text-main: #000000;
+      --text-muted: #000000;
+      --text-dim: #1e293b;
+      --primary: #005bb5;
+      --triage-red: #b91c1c;
+      --triage-yellow: #b45309;
+      --triage-green: #15803d;
+      --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.25);
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      min-height: 100%;
+      font-family: var(--font-family);
+      background: var(--bg-app);
+      background-image: var(--bg-gradient);
+      background-attachment: fixed;
+      color: var(--text-main);
+      line-height: 1.5;
+      font-size: 15px;
+    }
+
+    #app-root {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Header */
+    .app-header {
+      position: sticky;
+      top: 0;
+      z-index: 60;
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-bottom: 1.5px solid var(--border-glass);
+      padding: 10px 16px;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+    }
+    body.sunlight-mode .app-header {
+      background: #ffffff;
+      border-bottom: 2px solid #000000;
+    }
+    .header-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .brand-section {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .brand-logo-img {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--radius-sm);
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(2, 132, 199, 0.3);
+    }
+    .brand-text h1 {
+      font-size: 1.2rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      background: linear-gradient(90deg, #0284c7, #0f766e);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #0f172a;
+    }
+    body.sunlight-mode .brand-text h1 {
+      background: none;
+      -webkit-text-fill-color: #000000;
+      color: #000000;
+    }
+    .brand-subtitle {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      font-weight: 700;
+    }
+    body.sunlight-mode .brand-subtitle {
+      color: #000000;
+    }
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Network Status Pill */
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 6px 14px;
+      border-radius: var(--radius-full);
+      font-size: 0.78rem;
+      font-weight: 800;
+      cursor: pointer;
+      min-height: 38px;
+      transition: all 0.2s ease;
+      user-select: none;
+    }
+    .status-pill.online {
+      background: #dcfce7;
+      color: #15803d;
+      border: 1.5px solid #86efac;
+    }
+    body.sunlight-mode .status-pill.online {
+      background: #dcfce7;
+      color: #14532d;
+      border: 2px solid #15803d;
+    }
+    .status-pill.offline {
+      background: #fef3c7;
+      color: #b45309;
+      border: 1.5px solid #fde68a;
+    }
+    body.sunlight-mode .status-pill.offline {
+      background: #fef3c7;
+      color: #78350f;
+      border: 2px solid #b45309;
+    }
+    .status-pill-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+    .status-pill.online .status-pill-dot {
+      animation: pulse-ring 2s infinite;
+    }
+    @keyframes pulse-ring {
+      0% { transform: scale(0.9); opacity: 1; }
+      50% { transform: scale(1.3); opacity: 0.6; }
+      100% { transform: scale(0.9); opacity: 1; }
+    }
+
+    /* Action Buttons */
+    .btn-sync {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      color: #ffffff;
+      border: 1.5px solid rgba(0, 0, 0, 0.08);
+      border-radius: var(--radius-full);
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+      min-height: 38px;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      box-shadow: 0 2px 6px rgba(2, 132, 199, 0.25);
+    }
+    body.sunlight-mode .btn-sync {
+      background: #000000;
+      color: #ffffff;
+      border: 2px solid #000000;
+    }
+    .btn-sync.spinning svg {
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+
+    .btn-icon-toggle {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: #ffffff;
+      border: 1.5px solid var(--border-glass);
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+    body.sunlight-mode .btn-icon-toggle {
+      background: #ffffff;
+      border: 2px solid #000000;
+      color: #000000;
+    }
+
+    /* Subbar */
+    .worker-subbar {
+      background: #f1f5f9;
+      border-bottom: 1.5px solid var(--border-glass);
+      padding: 7px 16px;
+      font-size: 0.78rem;
+      color: #334155;
+      font-weight: 600;
+    }
+    body.sunlight-mode .worker-subbar {
+      background: #e2e8f0;
+      border-bottom: 2px solid #000000;
+      color: #000000;
+      font-weight: 800;
+    }
+    .worker-subbar-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    /* Navigation Tabs */
+    .nav-tab-bar {
+      background: #ffffff;
+      border-bottom: 1.5px solid var(--border-glass);
+      display: flex;
+      justify-content: center;
+    }
+    body.sunlight-mode .nav-tab-bar {
+      background: #ffffff;
+      border-bottom: 2px solid #000000;
+    }
+    .nav-tabs-container {
+      max-width: 1200px;
+      width: 100%;
+      display: flex;
+      overflow-x: auto;
+      padding: 0 16px;
+    }
+    .nav-tab-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 18px;
+      color: #475569;
+      background: transparent;
+      border: none;
+      border-bottom: 3px solid transparent;
+      font-size: 0.88rem;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      min-height: var(--touch-target-min);
+      transition: all 0.2s ease;
+    }
+    .nav-tab-btn:hover {
+      color: #0f172a;
+      background: #f1f5f9;
+    }
+    .nav-tab-btn.active {
+      color: #0284c7;
+      border-bottom-color: #0284c7;
+      background: #e0f2fe;
+    }
+    body.sunlight-mode .nav-tab-btn.active {
+      color: #000000;
+      border-bottom-color: #000000;
+      background: #e2e8f0;
+    }
+
+    /* Main Container */
+    .app-main {
+      flex: 1;
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 18px 16px 80px 16px;
+    }
+    .tab-view {
+      display: none;
+    }
+    .tab-view.active {
+      display: block;
+      animation: fadeIn 0.2s ease-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Panels & Cards */
+    .glass-panel {
+      background: var(--surface-card);
+      border: 1.5px solid var(--border-glass);
+      box-shadow: var(--shadow-card);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    body.sunlight-mode .glass-panel {
+      background: #ffffff;
+      border: 2px solid #000000;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+
+    /* KPI Grid */
+    .dashboard-kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 14px;
+      margin-bottom: 22px;
+    }
+    .kpi-card {
+      padding: 16px;
+      border-radius: var(--radius-md);
+      background: #ffffff;
+      border: 1.5px solid var(--border-glass);
+      box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    body.sunlight-mode .kpi-card {
+      background: #ffffff;
+      border: 2px solid #000000;
+    }
+    .kpi-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 4px;
+      background: var(--primary);
+    }
+    .kpi-card.kpi-red::before { background: var(--triage-red); }
+    .kpi-card.kpi-yellow::before { background: var(--triage-yellow); }
+    .kpi-card.kpi-green::before { background: var(--triage-green); }
+
+    .kpi-label {
+      font-size: 0.75rem;
+      color: #334155;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    body.sunlight-mode .kpi-label { color: #000000; font-weight: 900; }
+    .kpi-val {
+      font-size: 2.1rem;
+      font-weight: 900;
+      line-height: 1.1;
+      margin-top: 4px;
+      color: #0f172a;
+    }
+    .kpi-meta {
+      font-size: 0.72rem;
+      color: var(--text-dim);
+      margin-top: 4px;
+      font-weight: 600;
+    }
+
+    /* Action Hero Card */
+    .action-hero-card {
+      background: linear-gradient(135deg, #e0f2fe 0%, #ecfdf5 100%);
+      border: 1.5px solid #7dd3fc;
+      padding: 22px;
+      border-radius: var(--radius-lg);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 24px;
+      box-shadow: 0 4px 14px rgba(2, 132, 199, 0.08);
+    }
+    body.sunlight-mode .action-hero-card {
+      background: #e0f2fe;
+      border: 2px solid #005bb5;
+    }
+    .action-hero-text h2 {
+      font-size: 1.35rem;
+      font-weight: 800;
+      margin-bottom: 4px;
+      color: #0f172a;
+    }
+    .action-hero-text p {
+      color: #334155;
+      font-size: 0.88rem;
+      max-width: 580px;
+      font-weight: 500;
+    }
+    body.sunlight-mode .action-hero-text p { color: #000000; font-weight: 700; }
+
+    .btn-primary-action {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 24px;
+      background: linear-gradient(135deg, #0284c7, #0f766e);
+      color: #ffffff;
+      border: none;
+      border-radius: var(--radius-full);
+      font-size: 0.95rem;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(2, 132, 199, 0.3);
+      min-height: var(--touch-target-min);
+    }
+    body.sunlight-mode .btn-primary-action {
+      background: #000000;
+      color: #ffffff;
+      border: 2px solid #000000;
+    }
+
+    /* Outbreak Alert Banner */
+    .outbreak-banner {
+      background: #fee2e2;
+      border: 2px solid #ef4444;
+      border-radius: var(--radius-md);
+      padding: 12px 18px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: #991b1b;
+      margin-bottom: 18px;
+      box-shadow: 0 3px 10px rgba(220, 38, 38, 0.12);
+    }
+    body.sunlight-mode .outbreak-banner {
+      background: #fee2e2;
+      border: 3px solid #b91c1c;
+      color: #991b1b;
+    }
+
+    /* Triage Badges */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      border-radius: var(--radius-full);
+      font-size: 0.75rem;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .badge-red {
+      background: #fee2e2;
+      color: #991b1b;
+      border: 1.5px solid #f87171;
+    }
+    body.sunlight-mode .badge-red {
+      background: #fee2e2;
+      color: #991b1b;
+      border: 2px solid #b91c1c;
+    }
+    .badge-yellow {
+      background: #fef3c7;
+      color: #78350f;
+      border: 1.5px solid #fbbf24;
+    }
+    body.sunlight-mode .badge-yellow {
+      background: #fef3c7;
+      color: #78350f;
+      border: 2px solid #b45309;
+    }
+    .badge-green {
+      background: #dcfce7;
+      color: #14532d;
+      border: 1.5px solid #86efac;
+    }
+    body.sunlight-mode .badge-green {
+      background: #dcfce7;
+      color: #14532d;
+      border: 2px solid #15803d;
+    }
+
+    /* Stepper & Form */
+    .wizard-stepper {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 18px;
+      position: relative;
+    }
+    .wizard-stepper::before {
+      content: '';
+      position: absolute;
+      top: 18px; left: 20px; right: 20px;
+      height: 2px;
+      background: #cbd5e1;
+      z-index: 1;
+    }
+    .step-item {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex: 1;
+      text-align: center;
+    }
+    .step-circle {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #ffffff;
+      border: 2px solid #94a3b8;
+      color: #475569;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 0.85rem;
+      margin-bottom: 6px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    }
+    .step-item.active .step-circle {
+      background: #0284c7;
+      border-color: #0284c7;
+      color: #ffffff;
+      box-shadow: 0 0 10px rgba(2, 132, 199, 0.4);
+    }
+    body.sunlight-mode .step-item.active .step-circle {
+      background: #000000;
+      border-color: #000000;
+    }
+    .step-item.completed .step-circle {
+      background: #16a34a;
+      border-color: #16a34a;
+      color: #ffffff;
+    }
+    .step-label {
+      font-size: 0.72rem;
+      color: #1e293b;
+      font-weight: 700;
+    }
+    body.sunlight-mode .step-label { color: #000000; }
+
+    /* Form Fields */
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .form-label {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #0f172a;
+      display: flex;
+      justify-content: space-between;
+    }
+    .form-input, .form-select {
+      width: 100%;
+      min-height: var(--touch-target-min);
+      padding: 10px 14px;
+      background: #ffffff;
+      border: 1.5px solid #94a3b8;
+      border-radius: var(--radius-md);
+      color: #0f172a;
+      font-size: 0.95rem;
+      font-family: inherit;
+      font-weight: 600;
+    }
+    body.sunlight-mode .form-input,
+    body.sunlight-mode .form-select {
+      background: #ffffff;
+      border: 2px solid #000000;
+      color: #000000;
+      font-weight: 700;
+    }
+    .form-input:focus, .form-select:focus {
+      outline: none;
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.2);
+    }
+
+    /* Option Cards */
+    .option-cards-group {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 10px;
+    }
+    .option-card {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 14px;
+      background: #ffffff;
+      border: 1.5px solid var(--border-glass);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      min-height: var(--touch-target-min);
+      user-select: none;
+      transition: all 0.15s ease;
+      color: #0f172a;
+    }
+    body.sunlight-mode .option-card {
+      background: #ffffff;
+      border: 2px solid #000000;
+      color: #000000;
+    }
+    .option-card:hover {
+      border-color: #0284c7;
+      background: #f8fafc;
+    }
+    .option-card.selected {
+      background: #e0f2fe;
+      border-color: #0284c7;
+      color: #0369a1;
+      font-weight: 700;
+    }
+    body.sunlight-mode .option-card.selected {
+      background: #000000;
+      color: #ffffff;
+    }
+    .option-card.danger-selected {
+      background: #fee2e2;
+      border-color: #ef4444;
+      color: #991b1b;
+      font-weight: 700;
+    }
+    body.sunlight-mode .option-card.danger-selected {
+      background: #b91c1c;
+      color: #ffffff;
+    }
+
+    /* Pillar Skip Notice */
+    .pillar-skip-notice {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 18px;
+      background: #f1f5f9;
+      border: 1.5px dashed #94a3b8;
+      border-radius: var(--radius-md);
+      margin-bottom: 16px;
+      color: #1e293b;
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+    body.sunlight-mode .pillar-skip-notice {
+      background: #f1f5f9;
+      border: 2px dashed #000000;
+      color: #000000;
+      font-weight: 800;
+    }
+
+    /* Floating Live Triage Dock */
+    .live-triage-dock {
+      position: sticky;
+      bottom: 16px;
+      z-index: 40;
+      background: rgba(255, 255, 255, 0.98);
+      backdrop-filter: blur(14px);
+      border: 2px solid #0f172a;
+      border-radius: var(--radius-lg);
+      padding: 12px 18px;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.15);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin-top: 20px;
+      color: #0f172a;
+    }
+    body.sunlight-mode .live-triage-dock {
+      background: #ffffff;
+      border: 3px solid #000000;
+      color: #000000;
+    }
+
+    /* Records List */
+    .record-item-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px;
+      border-radius: var(--radius-md);
+      background: #ffffff;
+      border: 1.5px solid var(--border-glass);
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+      gap: 12px;
+      box-shadow: 0 2px 5px rgba(15, 23, 42, 0.03);
+    }
+    .record-item-card:hover {
+      border-color: #0284c7;
+      background: #f8fafc;
+    }
+    body.sunlight-mode .record-item-card {
+      background: #ffffff;
+      border: 2px solid #000000;
+    }
+    .record-tier-stripe {
+      width: 6px;
+      height: 44px;
+      border-radius: 3px;
+    }
+    .record-tier-stripe.RED { background: var(--triage-red); box-shadow: 0 0 6px var(--triage-red); }
+    .record-tier-stripe.YELLOW { background: var(--triage-yellow); }
+    .record-tier-stripe.GREEN { background: var(--triage-green); }
+
+    /* Referral Slip Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(6px);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+    .modal-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .modal-container {
+      background: #ffffff;
+      border: 2px solid var(--border-glass);
+      border-radius: var(--radius-lg);
+      max-width: 650px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 24px;
+      box-shadow: 0 20px 40px rgba(15, 23, 42, 0.2);
+      color: #0f172a;
+    }
+    body.sunlight-mode .modal-container {
+      background: #ffffff;
+      border: 3px solid #000000;
+      color: #000000;
+    }
+    .referral-slip-paper {
+      background: #ffffff;
+      color: #09131f;
+      padding: 24px;
+      border-radius: var(--radius-md);
+      border: 2px dashed #0284c7;
+      margin: 0 auto;
+    }
+    .slip-meta-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 14px;
+      font-size: 0.88rem;
+    }
+    .slip-meta-table td {
+      padding: 6px 8px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .slip-meta-table td.label {
+      font-weight: 700;
+      color: #475569;
+      width: 35%;
+    }
+    .slip-danger-box {
+      background: #fee2e2;
+      border-left: 5px solid #dc2626;
+      padding: 12px 14px;
+      margin-bottom: 14px;
+      border-radius: 4px;
+    }
+    .slip-action-box {
+      background: #f0fdf4;
+      border-left: 5px solid #16a34a;
+      padding: 12px 14px;
+      margin-bottom: 14px;
+      border-radius: 4px;
+    }
+
+    /* Heatmap */
+    .svg-health-map {
+      width: 100%;
+      height: auto;
+      display: block;
+      border-radius: var(--radius-md);
+      background: #f1f5f9;
+      border: 1.5px solid #cbd5e1;
+    }
+    body.sunlight-mode .svg-health-map {
+      border: 2px solid #000000;
+    }
+
+    /* Mobile Nav */
+    .mobile-bottom-nav {
+      display: none;
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      height: 64px;
+      background: #ffffff;
+      border-top: 1.5px solid var(--border-glass);
+      z-index: 50;
+      justify-content: space-around;
+      align-items: center;
+      padding: 0 8px;
+      box-shadow: 0 -2px 8px rgba(0,0,0,0.05);
+    }
+    body.sunlight-mode .mobile-bottom-nav {
+      background: #ffffff;
+      border-top: 2px solid #000000;
+    }
+    .mobile-nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      color: #475569;
+      background: none;
+      border: none;
+      font-size: 0.72rem;
+      font-weight: 700;
+      cursor: pointer;
+      flex: 1;
+    }
+    body.sunlight-mode .mobile-nav-item { color: #000000; font-weight: 800; }
+    .mobile-nav-item.active { color: #0284c7; font-weight: 800; }
+    body.sunlight-mode .mobile-nav-item.active { color: #000000; }
+
+    @media (max-width: 768px) {
+      .nav-tab-bar { display: none; }
+      .mobile-bottom-nav { display: flex; }
+      .app-main { padding-bottom: 90px; }
+      .action-hero-card { flex-direction: column; align-items: flex-start; }
+      .live-triage-dock { flex-direction: column; align-items: stretch; }
+    }
+
+    /* Toast */
+    .toast-container {
+      position: fixed;
+      bottom: 24px; right: 24px;
+      z-index: 120;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      pointer-events: none;
+    }
+    .toast {
+      pointer-events: auto;
+      padding: 12px 18px;
+      border-radius: var(--radius-md);
+      background: #0f172a;
+      border: 1px solid #334155;
+      color: #ffffff;
+      font-size: 0.88rem;
+      font-weight: 700;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    body.sunlight-mode .toast {
+      background: #000000;
+      color: #ffffff;
+      border: 2px solid #ffffff;
+    }
+  </style>
+</head>
+<body>
+  <div id="app-root">
+
+    <!-- Top App Header -->
+    <header class="app-header">
+      <div class="header-container">
+        <div class="brand-section">
+          <div class="brand-logo-img">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v20M2 12h20"/></svg>
+          </div>
+          <div class="brand-text">
+            <h1>SwasthyaNet <span style="font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; background: rgba(56,189,248,0.15); color: #38bdf8; font-weight: 800; border: 1px solid rgba(56,189,248,0.3);">STANDALONE PWA</span></h1>
+            <div class="brand-subtitle">Offline-First Rural Health Triage • स्वास्थ्य एवं कल्याण</div>
+          </div>
+        </div>
+
+        <div class="header-actions">
+          <!-- Live Offline/Online Network Simulation Toggle -->
+          <button id="status-pill" class="status-pill online" onclick="SwasthyaStandalone.toggleOfflineMode()" title="Click to toggle Simulated Offline Mode">
+            <span class="status-pill-dot"></span>
+            <span id="network-status-label">Online (PHC Linked)</span>
+          </button>
+
+          <!-- Simulated Sync Data Button -->
+          <button id="btn-sync" class="btn-sync" onclick="SwasthyaStandalone.triggerSync()" title="Sync local records with PHC Chandpur server">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>
+              <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/>
+            </svg>
+            <span id="sync-label">Sync Data</span>
+          </button>
+
+          <!-- Outdoor Sunlight High-Contrast Toggle -->
+          <button id="btn-sunlight-toggle" class="btn-icon-toggle" onclick="SwasthyaStandalone.toggleSunlightMode()" title="Toggle Outdoor Sunlight High-Contrast Mode" aria-label="Sunlight Mode">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+              <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Field Worker Context & Location Sub-bar -->
+    <div class="worker-subbar">
+      <div class="worker-subbar-container">
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <span>ASHA: <strong>Sunita Devi (ASHA-042)</strong> • Sub-Center Rampur</span>
+        </div>
+        <div>
+          <span>PHC Hub: <strong>Chandpur 24x7</strong></span>
+          <span style="color: var(--text-dim); margin: 0 6px;">•</span>
+          <span>Storage Engine: <strong>Local Browser Cache (Offline-Ready)</strong></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Desktop Navigation Tabs -->
+    <nav class="nav-tab-bar">
+      <div class="nav-tabs-container">
+        <button class="nav-tab-btn active" data-tab="dashboard" onclick="SwasthyaStandalone.switchTab('dashboard')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          <span>Household Dashboard</span>
+        </button>
+        <button class="nav-tab-btn" data-tab="screening" onclick="SwasthyaStandalone.switchTab('screening')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg>
+          <span>6-Pillar Screening Form</span>
+        </button>
+        <button class="nav-tab-btn" data-tab="records" onclick="SwasthyaStandalone.switchTab('records')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+          <span>Saved Offline Records</span>
+        </button>
+        <button class="nav-tab-btn" data-tab="supervisor" onclick="SwasthyaStandalone.switchTab('supervisor')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/></svg>
+          <span>Supervisor PHC View</span>
+        </button>
+      </div>
+    </nav>
+
+    <!-- Main Container -->
+    <main class="app-main">
+
+      <!-- ====================================================================
+           TAB 1: HOUSEHOLD & WORKER DASHBOARD
+           ==================================================================== -->
+      <section id="tab-dashboard" class="tab-view active">
+        <!-- Quick Action Hero -->
+        <div class="action-hero-card">
+          <div class="action-hero-text">
+            <h2>Community Health Screening & Triage</h2>
+            <p>Perform rapid under-10-minute household checks with smart conditional branching across 6 clinical pillars. Fully functional offline with zero server requirements.</p>
+          </div>
+          <button class="btn-primary-action" onclick="SwasthyaStandalone.startNewScreening()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <span>+ Start Household Screening</span>
+          </button>
+        </div>
+
+        <!-- Outbreak Alert Container -->
+        <div id="dashboard-critical-alerts"></div>
+
+        <!-- Dashboard KPI Metric Cards -->
+        <div class="dashboard-kpi-grid">
+          <div class="kpi-card">
+            <span class="kpi-label">Households Screened</span>
+            <span class="kpi-val" id="kpi-total-screened">0</span>
+            <span class="kpi-meta">Sub-Center Catchment</span>
+          </div>
+          <div class="kpi-card kpi-red">
+            <span class="kpi-label">Red Urgent Referrals</span>
+            <span class="kpi-val" id="kpi-red-referrals" style="color: #f87171;">0</span>
+            <span class="kpi-meta">Emergency Hospital Transfer</span>
+          </div>
+          <div class="kpi-card kpi-yellow">
+            <span class="kpi-label">Yellow Follow-Ups</span>
+            <span class="kpi-val" id="kpi-yellow-followup" style="color: #fbbf24;">0</span>
+            <span class="kpi-meta">48-72h Sub-Center Clinic</span>
+          </div>
+          <div class="kpi-card kpi-green">
+            <span class="kpi-label">Green Routine Care</span>
+            <span class="kpi-val" id="kpi-green-routine" style="color: #4ade80;">0</span>
+            <span class="kpi-meta">Promotive / Stable</span>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-label">Pending Sync Queue</span>
+            <span class="kpi-val" id="kpi-pending-sync" style="color: #38bdf8;">0</span>
+            <span class="kpi-meta">Saved in Browser Cache</span>
+          </div>
+        </div>
+
+        <!-- Recent Screenings Section -->
+        <div class="glass-panel">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h3 style="font-size: 1.1rem; font-weight: 800;">Recent Household Screenings</h3>
+            <button class="nav-tab-btn" style="padding: 4px 10px; font-size: 0.78rem;" onclick="SwasthyaStandalone.switchTab('records')">View All Records &rarr;</button>
+          </div>
+          <div id="recent-screenings-feed"></div>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           TAB 2: DYNAMIC 6-PILLAR SCREENING FORM WIZARD
+           ==================================================================== -->
+      <section id="tab-screening" class="tab-view">
+        <div class="glass-panel" style="margin-bottom: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 14px;">
+            <h2 style="font-size: 1.25rem; font-weight: 800;">6-Pillar Household Screening Wizard</h2>
+            <div id="survey-timer-display" style="font-size: 0.78rem; font-weight: 800; color: #38bdf8; background: rgba(56,189,248,0.1); padding: 4px 12px; border-radius: 9999px;">
+              Pace: 0:00 (Target &lt; 10m)
+            </div>
+          </div>
+
+          <!-- 4-Step Stepper -->
+          <div class="wizard-stepper">
+            <div id="step-indicator-1" class="step-item active">
+              <div class="step-circle">1</div>
+              <span class="step-label">Household Env</span>
+            </div>
+            <div id="step-indicator-2" class="step-item">
+              <div class="step-circle">2</div>
+              <span class="step-label">Family Roster</span>
+            </div>
+            <div id="step-indicator-3" class="step-item">
+              <div class="step-circle">3</div>
+              <span class="step-label">6-Pillars Assessment</span>
+            </div>
+            <div id="step-indicator-4" class="step-item">
+              <div class="step-circle">4</div>
+              <span class="step-label">Triage & Slip</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 1: HOUSEHOLD & ENVIRONMENT -->
+        <div id="wizard-step-1" class="glass-panel">
+          <h3 style="font-size: 1.1rem; font-weight: 800; margin-bottom: 6px;">Step 1: Household Registration & Environmental Health</h3>
+          <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 20px;">Village location, ration card/ABHA ID, water source, and sanitation.</p>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Head of Family Name *</label>
+              <input type="text" id="input-hh-head-name" class="form-input" placeholder="e.g. Ramesh Kumar" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Ration Card / ABHA ID</label>
+              <input type="text" id="input-hh-ration" class="form-input" placeholder="e.g. RC-4491-0021" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Village / Gram Panchayat *</label>
+              <select id="select-hh-village" class="form-select">
+                <option value="Rampur">Rampur (Sub-Center Rampur)</option>
+                <option value="Bilaspur">Bilaspur (Sub-Center Bilaspur)</option>
+                <option value="Chandpur">Chandpur (PHC HQ)</option>
+                <option value="Shivpur">Shivpur (Sub-Center Shivpur)</option>
+                <option value="Kalyanpur">Kalyanpur (Sub-Center Kalyanpur)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Ward / Hamlet</label>
+              <input type="text" id="input-hh-ward" class="form-input" placeholder="e.g. Ward 2, Near Well" />
+            </div>
+          </div>
+
+          <h4 style="font-size: 0.95rem; font-weight: 800; margin: 18px 0 10px 0; color: #38bdf8;">Pillar 1: Environmental Factors</h4>
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Drinking Water Source</label>
+              <select id="select-env-water" class="form-select">
+                <option value="handpump">Handpump / Protected Tube-well</option>
+                <option value="piped">Piped Water Supply (Har Ghar Jal)</option>
+                <option value="unprotected_well">Unprotected Open Well (Risk Flag)</option>
+                <option value="river_pond">River / Pond / Surface Water (High Risk Flag)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Latrine / Sanitation Access</label>
+              <select id="select-env-latrine" class="form-select">
+                <option value="individual_household">Individual Household Sanitary Latrine</option>
+                <option value="community_toilet">Community Sanitary Complex</option>
+                <option value="open_defecation">Open Defecation (Diarrheal Risk Flag)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Primary Cooking Fuel</label>
+              <select id="select-env-fuel" class="form-select">
+                <option value="clean_lpg">Clean LPG / Electric (PM Ujjwala)</option>
+                <option value="firewood_cowdung">Firewood / Biomass Smoke (Respiratory Risk Flag)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 2: FAMILY MEMBERS ROSTER -->
+        <div id="wizard-step-2" style="display: none;">
+          <div class="glass-panel" style="margin-bottom: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+              <div>
+                <h3 style="font-size: 1.15rem; font-weight: 800;">Step 2: Family Members Roster</h3>
+                <p style="font-size: 0.82rem; color: var(--text-muted);">Enter members' age and gender to enable automated conditional branching.</p>
+              </div>
+              <button class="btn-primary-action" style="padding: 10px 16px; font-size: 0.85rem;" onclick="SwasthyaStandalone.addMember()">
+                + Add Another Family Member
+              </button>
+            </div>
+          </div>
+          <div id="family-roster-list"></div>
+        </div>
+
+        <!-- STEP 3: DYNAMIC 6-PILLARS ASSESSMENT -->
+        <div id="wizard-step-3" style="display: none;">
+          <div class="glass-panel" style="padding: 12px 16px; margin-bottom: 16px;">
+            <div style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase;">
+              Active Individual Member Assessment:
+            </div>
+            <div id="pillar-member-switcher" style="display: flex; gap: 8px; overflow-x: auto;"></div>
+          </div>
+          <div id="pillar-questions-container"></div>
+          <div id="live-triage-dock-mount"></div>
+        </div>
+
+        <!-- STEP 4: TRIAGE EVALUATION & SUMMARY -->
+        <div id="wizard-step-4" style="display: none;"></div>
+
+        <!-- Stepper Buttons -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px; gap: 12px;">
+          <button id="wizard-btn-prev" class="btn-sync" style="background: rgba(255,255,255,0.08); border-color: var(--border-glass); min-height: 48px; padding: 10px 20px; display: none;" onclick="SwasthyaStandalone.wizardPrev()">
+            &larr; Back
+          </button>
+          <button id="wizard-btn-next" class="btn-primary-action" style="min-height: 48px; padding: 12px 28px;" onclick="SwasthyaStandalone.wizardNext()">
+            Next: Family Roster &rarr;
+          </button>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           TAB 3: SAVED OFFLINE RECORDS (LOCAL STORAGE / INDEXEDDB)
+           ==================================================================== -->
+      <section id="tab-records" class="tab-view">
+        <div class="glass-panel" style="margin-bottom: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px;">
+            <div>
+              <h2 style="font-size: 1.25rem; font-weight: 800;">Saved Offline Records (Local Storage)</h2>
+              <p style="font-size: 0.82rem; color: var(--text-muted);">Permanently stored in browser cache. Fully accessible and printable without Internet.</p>
+            </div>
+            <button class="btn-sync" onclick="SwasthyaStandalone.triggerSync()">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/></svg>
+              <span>Simulate Sync All</span>
+            </button>
+          </div>
+
+          <!-- Search & Filter Controls -->
+          <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px;">
+            <input type="text" id="record-search-input" class="form-input" style="flex: 1; min-width: 220px;" placeholder="Search family head, village, or ration ID..." oninput="SwasthyaStandalone.filterRecords()" />
+            <select id="record-tier-filter" class="form-select" style="width: auto; min-width: 160px;" onchange="SwasthyaStandalone.filterRecords()">
+              <option value="ALL">All Risk Tiers</option>
+              <option value="RED">Red (Urgent Emergency)</option>
+              <option value="YELLOW">Yellow (Moderate Risk)</option>
+              <option value="GREEN">Green (Routine Care)</option>
+              <option value="PENDING">Pending Sync</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="records-list-container"></div>
+      </section>
+
+      <!-- ====================================================================
+           TAB 4: SUPERVISOR & PHC GIS OUTBREAK HEATMAP VIEW
+           ==================================================================== -->
+      <section id="tab-supervisor" class="tab-view">
+        <div class="glass-panel" style="margin-bottom: 18px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
+            <div>
+              <span class="badge" style="background: rgba(16, 185, 129, 0.2); color: #34d399; margin-bottom: 4px;">PHC Surveillance</span>
+              <h2 style="font-size: 1.35rem; font-weight: 800;">Primary Health Centre Chandpur Summary</h2>
+              <p style="font-size: 0.82rem; color: var(--text-muted);">Aggregate triage breakdown and GIS disease cluster visualization across 5 villages.</p>
+            </div>
+            <button class="btn-primary-action" style="padding: 10px 16px; font-size: 0.85rem;" onclick="SwasthyaStandalone.exportJSON()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              <span>Export Offline Data (JSON)</span>
+            </button>
+          </div>
+
+          <div class="dashboard-kpi-grid">
+            <div class="kpi-card">
+              <span class="kpi-label">Total Screened</span>
+              <span class="kpi-val" id="sup-total-hh">0</span>
+              <span class="kpi-meta">Households in Catchment</span>
+            </div>
+            <div class="kpi-card">
+              <span class="kpi-label">Total Population</span>
+              <span class="kpi-val" id="sup-total-ind" style="color: #38bdf8;">0</span>
+              <span class="kpi-meta">Individuals Assessed</span>
+            </div>
+            <div class="kpi-card kpi-red">
+              <span class="kpi-label">Urgent Red Tiers</span>
+              <span class="kpi-val" id="sup-red-pct" style="color: #f87171;">0</span>
+              <span class="kpi-meta">108 Ambulance Dispatch</span>
+            </div>
+            <div class="kpi-card kpi-yellow">
+              <span class="kpi-label">Moderate Yellow Tiers</span>
+              <span class="kpi-val" id="sup-yellow-pct" style="color: #fbbf24;">0</span>
+              <span class="kpi-meta">Sub-Center Follow-up</span>
+            </div>
+            <div class="kpi-card kpi-green">
+              <span class="kpi-label">Routine Green Tiers</span>
+              <span class="kpi-val" id="sup-green-pct" style="color: #4ade80;">0</span>
+              <span class="kpi-meta">Promotive Wellness</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Disease Threat Cards -->
+        <div class="glass-panel" style="margin-bottom: 18px;">
+          <h3 style="font-size: 1.05rem; font-weight: 800; margin-bottom: 12px;">High-Risk Priority Clusters Flagged</h3>
+          <div id="sup-threat-cards" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;"></div>
+        </div>
+
+        <!-- Interactive GIS Heatmap Canvas -->
+        <div class="glass-panel">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px;">
+            <h3 style="font-size: 1.1rem; font-weight: 800; display: flex; align-items: center; gap: 8px;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+              Catchment Area Outbreak & Vulnerability Heatmap
+            </h3>
+            <div style="display: flex; gap: 6px; overflow-x: auto;">
+              <button class="nav-tab-btn active" id="layer-btn-all" style="padding: 6px 12px; font-size: 0.75rem;" onclick="SwasthyaStandalone.setHeatmapLayer('all')">All Risks</button>
+              <button class="nav-tab-btn" id="layer-btn-maternal" style="padding: 6px 12px; font-size: 0.75rem;" onclick="SwasthyaStandalone.setHeatmapLayer('maternal')">Maternal &amp; SAM</button>
+              <button class="nav-tab-btn" id="layer-btn-water" style="padding: 6px 12px; font-size: 0.75rem;" onclick="SwasthyaStandalone.setHeatmapLayer('water')">Waterborne</button>
+              <button class="nav-tab-btn" id="layer-btn-ncd" style="padding: 6px 12px; font-size: 0.75rem;" onclick="SwasthyaStandalone.setHeatmapLayer('ncd')">NCD &amp; TB</button>
+            </div>
+          </div>
+          <div id="heatmap-svg-mount"></div>
+          <div id="heatmap-village-flyout" style="margin-top: 14px;"></div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Mobile Bottom Navigation -->
+    <nav class="mobile-bottom-nav">
+      <button class="mobile-nav-item active" data-tab="dashboard" onclick="SwasthyaStandalone.switchTab('dashboard')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        <span>Dashboard</span>
+      </button>
+      <button class="mobile-nav-item" data-tab="screening" onclick="SwasthyaStandalone.switchTab('screening')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        <span>Screening</span>
+      </button>
+      <button class="mobile-nav-item" data-tab="records" onclick="SwasthyaStandalone.switchTab('records')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+        <span>Records</span>
+      </button>
+      <button class="mobile-nav-item" data-tab="supervisor" onclick="SwasthyaStandalone.switchTab('supervisor')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/></svg>
+        <span>Supervisor</span>
+      </button>
+    </nav>
+
+    <!-- Referral Slip Modal -->
+    <div id="modal-overlay" class="modal-overlay">
+      <div class="modal-container">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--border-glass); padding-bottom: 10px;">
+          <h3 style="font-weight: 800;">Emergency Referral Slip</h3>
+          <button class="btn-icon-toggle" style="width: 32px; height: 32px;" onclick="SwasthyaStandalone.closeModal()">&times;</button>
+        </div>
+        <div id="modal-content-mount"></div>
+      </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="toast-container"></div>
+  </div>
+
+  <!-- ==========================================================================
+       All-Inclusive Standalone Controller & Deterministic Triage Engine
+       ========================================================================== -->
+  <script>
+    const SwasthyaStandalone = (() => {
+      // LocalStorage Key
+      const STORAGE_KEY = 'swasthyanet_households_v2';
+
+      // Application State
+      const state = {
+        currentTab: 'dashboard',
+        isOfflineMode: false,
+        sunlightMode: false,
+        wizardStep: 1,
+        activeMemberIndex: 0,
+        surveyStartTime: null,
+        surveyTimerInterval: null,
+        heatmapLayer: 'all',
+        selectedVillage: null,
+        
+        currentHousehold: {
+          id: null,
+          familyHeadName: '',
+          rationCardNumber: '',
+          village: 'Rampur',
+          ward: '',
+          environment: {
+            waterSource: 'handpump',
+            latrineAccess: 'individual_household',
+            cookingFuel: 'clean_lpg'
+          },
+          members: []
+        },
+        households: []
+      };
+
+      // Sound alerts
+      function playAlertChime() {
+        try {
+          const ctx = new (window.AudioContext || window.webkitAudioContext)();
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(880, ctx.currentTime);
+          osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.15);
+          osc.frequency.setValueAtTime(880, ctx.currentTime + 0.3);
+          gain.gain.setValueAtTime(0.25, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.55);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.55);
+        } catch(e) {}
+      }
+
+      // Initialize
+      function init() {
+        console.log('[SwasthyaNet] Starting standalone prototype...');
+        loadStoredHouseholds();
+        if (state.households.length === 0) {
+          seedRealisticHouseholds();
+        }
+        renderDashboard();
+        renderRecordsList();
+        renderSupervisor();
+      }
+
+      // Storage Management
+      function loadStoredHouseholds() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          state.households = raw ? JSON.parse(raw) : [];
+        } catch(e) {
+          state.households = [];
+        }
+      }
+
+      function saveAllHouseholds() {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(state.households));
+        } catch(e) {}
+      }
+
+      // Preloaded Realistic Rural Cases
+      function seedRealisticHouseholds() {
+        const seedData = [
+          {
+            id: 'HH-2026-001',
+            familyHeadName: 'Manoj Kumar',
+            rationCardNumber: 'RC-9921-8841',
+            village: 'Rampur',
+            ward: 'Tola 2 (River Bank)',
+            environment: { waterSource: 'unprotected_well', latrineAccess: 'open_defecation', cookingFuel: 'firewood_cowdung' },
+            members: [
+              {
+                id: 'M-1', name: 'Anita Devi', age: 22, gender: 'female', relationship: 'Wife',
+                femaleHealth: { isPregnant: true, gestationalMonths: 8, ancCount: 2, systolicBP: 164, diastolicBP: 108, activeVaginalBleeding: true, severeHeadacheBlurredVision: true }
+              },
+              { id: 'M-2', name: 'Manoj Kumar', age: 26, gender: 'male', relationship: 'Head', maleHealth: {} }
+            ]
+          },
+          {
+            id: 'HH-2026-002',
+            familyHeadName: 'Radha Devi',
+            rationCardNumber: 'RC-4412-1092',
+            village: 'Bilaspur',
+            ward: 'Harijan Basti',
+            environment: { waterSource: 'river_pond', latrineAccess: 'open_defecation', cookingFuel: 'firewood_cowdung' },
+            members: [
+              {
+                id: 'M-1', name: 'Chhotu Kumar', age: 1.5, gender: 'male', relationship: 'Son',
+                childHealth: { muac: 11.1, bilateralPedalEdema: true, unableToFeedOrDrink: true, chestIndrawing: true, diarrheaDays: 4 }
+              },
+              { id: 'M-2', name: 'Radha Devi', age: 24, gender: 'female', relationship: 'Head', femaleHealth: { isPregnant: false } }
+            ]
+          },
+          {
+            id: 'HH-2026-003',
+            familyHeadName: 'Ram Swaroop',
+            rationCardNumber: 'RC-1198-3321',
+            village: 'Chandpur',
+            ward: 'Main Bazar Road',
+            environment: { waterSource: 'piped', latrineAccess: 'individual_household', cookingFuel: 'clean_lpg' },
+            members: [
+              {
+                id: 'M-1', name: 'Ram Swaroop', age: 68, gender: 'male', relationship: 'Head',
+                elderlyCare: { systolicBP: 186, diastolicBP: 112, historyOfFrequentFalls: true, visionLossCataract: true },
+                maleHealth: { crushingChestPainSweating: true }
+              }
+            ]
+          },
+          {
+            id: 'HH-2026-004',
+            familyHeadName: 'Suresh Yadav',
+            rationCardNumber: 'RC-8812-4409',
+            village: 'Shivpur',
+            ward: 'Yadav Tola',
+            environment: { waterSource: 'handpump', latrineAccess: 'individual_household', cookingFuel: 'firewood_cowdung' },
+            members: [
+              {
+                id: 'M-1', name: 'Suresh Yadav', age: 44, gender: 'male', relationship: 'Head',
+                maleHealth: { coughOverTwoWeeks: true, heavyTobaccoAlcohol: true }
+              }
+            ]
+          },
+          {
+            id: 'HH-2026-005',
+            familyHeadName: 'Ramesh Verma',
+            rationCardNumber: 'RC-5521-1200',
+            village: 'Chandpur',
+            ward: 'Station Road',
+            environment: { waterSource: 'piped', latrineAccess: 'individual_household', cookingFuel: 'clean_lpg' },
+            members: [
+              { id: 'M-1', name: 'Ramesh Verma', age: 36, gender: 'male', relationship: 'Head', maleHealth: {} },
+              { id: 'M-2', name: 'Sunita Verma', age: 32, gender: 'female', relationship: 'Wife', femaleHealth: { isPregnant: false } },
+              { id: 'M-3', name: 'Aarav Verma', age: 4, gender: 'male', relationship: 'Son', childHealth: { muac: 13.8, immunizationStatus: 'up_to_date' } }
+            ]
+          }
+        ];
+
+        // Evaluate each seed record
+        state.households = seedData.map(hh => evaluateCompleteHousehold(hh));
+        saveAllHouseholds();
+      }
+
+      // =========================================================================
+      // DETERMINISTIC CLINICAL TRIAGE ENGINE
+      // =========================================================================
+      function getApplicablePillars(age, gender) {
+        const a = Number(age || 0);
+        const g = (gender || 'female').toLowerCase();
+        return {
+          household: true,
+          femaleHealth: g === 'female' && a >= 12,
+          childHealth: a <= 5,
+          maleHealth: g === 'male' && a >= 18,
+          elderlyCare: a >= 60,
+          mentalHealth: a >= 15
+        };
+      }
+
+      function evaluateMember(m, env) {
+        const a = Number(m.age || 0);
+        const g = (m.gender || 'female').toLowerCase();
+        const app = getApplicablePillars(a, g);
+
+        const redFlags = [];
+        const yellowFlags = [];
+        const actions = [];
+        const recs = [];
+
+        // Pillar 1: Environment
+        if (env && (env.waterSource === 'unprotected_well' || env.waterSource === 'river_pond')) {
+          yellowFlags.push('Unsafe water source: High enteric pathogen risk');
+          recs.push('Advise boiling water for 1 min or chlorination');
+        }
+        if (env && env.latrineAccess === 'open_defecation') {
+          yellowFlags.push('Open defecation: Diarrheal & parasite hazard');
+        }
+
+        // Pillar 2: Female Health
+        if (app.femaleHealth && m.femaleHealth) {
+          const f = m.femaleHealth;
+          if (f.isPregnant) {
+            if (f.activeVaginalBleeding) {
+              redFlags.push('Active vaginal bleeding in pregnancy (Suspected Antepartum Hemorrhage)');
+              actions.push('Call 108 Ambulance immediately, keep left lateral tilt, DO NOT do vaginal exam');
+            }
+            if (f.convulsionsOrFits) {
+              redFlags.push('Convulsions / Fits (Suspected Eclampsia)');
+              actions.push('Ensure airway clear, urgent transfer to FRU with Magnesium Sulfate');
+            }
+            if (f.severeHeadacheBlurredVision) {
+              redFlags.push('Severe headache & blurred vision (Imminent Eclampsia)');
+              actions.push('Urgent BP control and hospital transfer');
+            }
+            if (Number(f.systolicBP) >= 160 || Number(f.diastolicBP) >= 110) {
+              redFlags.push(`Severe Hypertensive crisis in pregnancy (${f.systolicBP}/${f.diastolicBP} mmHg)`);
+            }
+            if (f.decreasedFetalMovements) {
+              redFlags.push('Marked decrease/absence of fetal movement (Fetal Distress)');
+            }
+            // Yellow ANC
+            if (!f.activeVaginalBleeding && !f.convulsionsOrFits) {
+              if (Number(f.gestationalMonths) >= 6 && Number(f.ancCount) < 2) {
+                yellowFlags.push(`Inadequate ANC visits (${f.ancCount} visits in 3rd trimester)`);
+                recs.push('Schedule PMSMA checkup on 9th of month');
+              }
+            }
+          } else {
+            if (f.breastLumpHardIrregular) {
+              redFlags.push('Hard, irregular breast lump (Suspected Malignancy)');
+              actions.push('Refer for Mammography / FNAC at District Hospital');
+            }
+            if (f.postMenopausalBleeding) {
+              redFlags.push('Post-menopausal vaginal bleeding (Suspected Malignancy)');
+            }
+            if (f.severeFoulDischarge) {
+              yellowFlags.push('Chronic foul discharge / pelvic pain (PID / RTI)');
+            }
+          }
+        }
+
+        // Pillar 3: Child Health
+        if (app.childHealth && m.childHealth) {
+          const c = m.childHealth;
+          const muac = c.muac ? parseFloat(c.muac) : null;
+          if (c.unableToFeedOrDrink) {
+            redFlags.push('Unable to drink or breastfeed (General Danger Sign)');
+            actions.push('Keep warm, urgent 108 Ambulance dispatch to SNCU');
+          }
+          if (c.chestIndrawing) {
+            redFlags.push('Lower chest indrawing (Severe Pneumonia)');
+            actions.push('Pre-referral amoxicillin if trained, urgent oxygen');
+          }
+          if (muac !== null && muac < 11.5) {
+            redFlags.push(`Severe Acute Malnutrition (SAM): MUAC ${muac} cm (< 11.5 cm)`);
+            actions.push('Immediate referral to Nutrition Rehabilitation Centre (NRC)');
+          }
+          if (c.bilateralPedalEdema) {
+            redFlags.push('Bilateral pitting pedal edema (Kwashiorkor)');
+          }
+          // Yellow Child
+          if (redFlags.length === 0) {
+            if (muac !== null && muac >= 11.5 && muac <= 12.5) {
+              yellowFlags.push(`Moderate Acute Malnutrition (MAM): MUAC ${muac} cm`);
+              recs.push('Enroll in Poshan Tracker, energy-dense feeding');
+            }
+            if (c.diarrheaDays && Number(c.diarrheaDays) >= 3) {
+              yellowFlags.push(`Diarrhea for ${c.diarrheaDays} days (Dehydration risk)`);
+              recs.push('Start ORS + Zinc 20 mg for 14 days');
+            }
+            if (c.immunizationStatus === 'missed_essential') {
+              yellowFlags.push('Missed essential vaccines (Pentavalent / MR)');
+              recs.push('Mobilize to next Sub-Center VHND session');
+            }
+          }
+        }
+
+        // Pillar 4: Male Health
+        if (app.maleHealth && m.maleHealth) {
+          const male = m.maleHealth;
+          if (male.crushingChestPainSweating) {
+            redFlags.push('Crushing chest pain + left arm pain/sweating (Suspected Myocardial Infarction)');
+            actions.push('Chew Aspirin 300 mg, immediate 108 Ambulance to ECG center');
+          }
+          if (male.suddenSlurredSpeechWeakness) {
+            redFlags.push('Sudden slurred speech / facial droop (Acute Stroke)');
+            actions.push('Urgent hospital transfer within golden hour');
+          }
+          if (male.hemoptysisFreshBlood) {
+            redFlags.push('Active coughing of fresh blood (Massive Hemoptysis)');
+          }
+          if (male.coughOverTwoWeeks) {
+            yellowFlags.push('Cough > 2 weeks (Presumptive TB - Nikshay)');
+            recs.push('Collect 2 sputum samples for CBNAAT testing');
+          }
+          if (male.heavyTobaccoAlcohol) {
+            yellowFlags.push('Heavy tobacco / alcohol substance dependence');
+          }
+        }
+
+        // Pillar 5: Elderly Care
+        if (app.elderlyCare && m.elderlyCare) {
+          const e = m.elderlyCare;
+          const sbp = Number(e.systolicBP || 0);
+          const dbp = Number(e.diastolicBP || 0);
+          if (sbp >= 180 || dbp >= 110) {
+            redFlags.push(`Hypertensive Crisis (${sbp}/${dbp} mmHg)`);
+            actions.push('Urgent evaluation at PHC/CHC; quiet resting');
+          }
+          if (e.acuteFallInabilityToWalk) {
+            redFlags.push('Fall with inability to walk (Suspected Hip Fracture)');
+            actions.push('Immobilize limb, emergency ambulance transfer');
+          }
+          if (e.historyOfFrequentFalls) {
+            yellowFlags.push('High fall risk: Multiple falls in past 6 months');
+          }
+          if (e.visionLossCataract) {
+            yellowFlags.push('Severe bilateral visual impairment (Dense Cataract)');
+            recs.push('Register for free NPCB cataract camp');
+          }
+        }
+
+        // Pillar 6: Mental Health
+        if (app.mentalHealth && m.mentalHealth) {
+          const mh = m.mentalHealth;
+          if (mh.activeSuicideIdeationOrSelfHarm) {
+            redFlags.push('Active self-harm ideation / expression of wanting to end life');
+            actions.push('Do NOT leave patient alone, call Tele-MANAS (14416) & urgent MO consult');
+          }
+          if (Number(mh.phqScore || 0) >= 4) {
+            yellowFlags.push(`Elevated PHQ-2 depression score (${mh.phqScore}/6)`);
+            recs.push('Psychosocial first aid & counseling at Sub-Center');
+          }
+        }
+
+        // Determine Tier
+        let tier = 'GREEN';
+        let tierLabel = 'Low Risk (Routine Care)';
+        let tierClass = 'badge-green';
+        let actionWindow = 'Routine monthly VHND';
+        let referralLevel = 'ASHA Home Care / Anganwadi';
+
+        if (redFlags.length > 0) {
+          tier = 'RED';
+          tierLabel = 'Urgent Referral (Emergency)';
+          tierClass = 'badge-red';
+          actionWindow = 'Immediate (Call 108 Ambulance)';
+          referralLevel = 'PHC Medical Officer / CHC Emergency';
+        } else if (yellowFlags.length > 0) {
+          tier = 'YELLOW';
+          tierLabel = 'Moderate Risk (Scheduled Follow-up)';
+          tierClass = 'badge-yellow';
+          actionWindow = 'Within 48-72 Hours';
+          referralLevel = 'Sub-Center ANM / PHC OPD';
+        }
+
+        return {
+          memberId: m.id,
+          name: m.name,
+          age: a,
+          gender: g,
+          tier,
+          tierLabel,
+          tierClass,
+          actionWindow,
+          referralLevel,
+          redFlags,
+          yellowFlags,
+          actions,
+          recs
+        };
+      }
+
+      function evaluateCompleteHousehold(hh) {
+        const members = hh.members || [];
+        const evaluatedMembers = members.map(m => {
+          const evalRes = evaluateMember(m, hh.environment);
+          return { ...m, evaluation: evalRes };
+        });
+
+        const hasRed = evaluatedMembers.some(m => m.evaluation.tier === 'RED');
+        const hasYellow = evaluatedMembers.some(m => m.evaluation.tier === 'YELLOW');
+
+        let overallTier = 'GREEN';
+        let overallTierLabel = 'Routine Care';
+        let overallBadgeClass = 'badge-green';
+        if (hasRed) {
+          overallTier = 'RED';
+          overallTierLabel = 'Urgent Referral';
+          overallBadgeClass = 'badge-red';
+        } else if (hasYellow) {
+          overallTier = 'YELLOW';
+          overallTierLabel = 'Moderate Risk';
+          overallBadgeClass = 'badge-yellow';
+        }
+
+        const allRedFlags = [];
+        const allImmediateActions = [];
+        evaluatedMembers.forEach(m => {
+          m.evaluation.redFlags.forEach(f => allRedFlags.push(`[${m.name}] ${f}`));
+          m.evaluation.actions.forEach(a => allImmediateActions.push(`[${m.name}] ${a}`));
+        });
+
+        return {
+          ...hh,
+          members: evaluatedMembers,
+          overallTier,
+          overallTierLabel,
+          overallBadgeClass,
+          allRedFlags,
+          allImmediateActions,
+          syncStatus: hh.syncStatus || 'synced',
+          updatedAt: hh.updatedAt || new Date().toISOString()
+        };
+      }
+
+      // =========================================================================
+      // UI CONTROLS & NAVIGATION
+      // =========================================================================
+      function switchTab(tabId) {
+        state.currentTab = tabId;
+        document.querySelectorAll('.tab-view').forEach(panel => {
+          panel.classList.toggle('active', panel.id === `tab-${tabId}`);
+        });
+        document.querySelectorAll('[data-tab]').forEach(btn => {
+          btn.classList.toggle('active', btn.getAttribute('data-tab') === tabId);
+        });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+        if (tabId === 'supervisor') {
+          renderSupervisor();
+        }
+      }
+
+      function toggleOfflineMode() {
+        state.isOfflineMode = !state.isOfflineMode;
+        const pill = document.getElementById('status-pill');
+        const label = document.getElementById('network-status-label');
+        if (state.isOfflineMode) {
+          pill.className = 'status-pill offline';
+          label.innerText = 'Offline (Simulated Field)';
+          showToast('Offline Mode Enabled. Data will save in browser storage.', 'warning');
+        } else {
+          pill.className = 'status-pill online';
+          label.innerText = 'Online (PHC Linked)';
+          showToast('Online Mode Restored.', 'info');
+        }
+      }
+
+      function toggleSunlightMode() {
+        state.sunlightMode = !state.sunlightMode;
+        document.body.classList.toggle('sunlight-mode', state.sunlightMode);
+        showToast(state.sunlightMode ? 'Sunlight High-Contrast Mode Enabled' : 'Standard Glassmorphism Mode Enabled', 'info');
+      }
+
+      function triggerSync() {
+        const btn = document.getElementById('btn-sync');
+        btn.classList.add('spinning');
+        showToast('Connecting to PHC Chandpur Server...', 'info');
+
+        setTimeout(() => {
+          state.households.forEach(h => h.syncStatus = 'synced');
+          saveAllHouseholds();
+          btn.classList.remove('spinning');
+          renderDashboard();
+          renderRecordsList();
+          showToast('All offline records synchronized successfully with PHC!', 'success');
+        }, 1000);
+      }
+
+      // =========================================================================
+      // DASHBOARD RENDERING
+      // =========================================================================
+      function renderDashboard() {
+        const total = state.households.length;
+        const red = state.households.filter(h => h.overallTier === 'RED').length;
+        const yellow = state.households.filter(h => h.overallTier === 'YELLOW').length;
+        const green = state.households.filter(h => h.overallTier === 'GREEN').length;
+        const pending = state.households.filter(h => h.syncStatus === 'pending_sync').length;
+
+        document.getElementById('kpi-total-screened').innerText = total;
+        document.getElementById('kpi-red-referrals').innerText = red;
+        document.getElementById('kpi-yellow-followup').innerText = yellow;
+        document.getElementById('kpi-green-routine').innerText = green;
+        document.getElementById('kpi-pending-sync').innerText = pending;
+
+        document.getElementById('sync-label').innerText = `Sync Data ${pending > 0 ? `(${pending})` : ''}`;
+
+        // Alert Banner
+        const alertBox = document.getElementById('dashboard-critical-alerts');
+        if (red > 0) {
+          alertBox.innerHTML = `
+            <div class="outbreak-banner">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              <div style="flex: 1;">
+                <strong>EMERGENCY REFERRAL ALERT:</strong> ${red} household(s) flagged with urgent danger signs requiring immediate ambulance / hospital dispatch.
+              </div>
+              <button class="btn-primary-action" style="padding: 6px 14px; font-size: 0.78rem;" onclick="SwasthyaStandalone.switchTab('records')">View Roster</button>
+            </div>
+          `;
+        } else {
+          alertBox.innerHTML = '';
+        }
+
+        // Recent Feed
+        const feed = document.getElementById('recent-screenings-feed');
+        feed.innerHTML = state.households.slice(0, 5).map(h => createRecordRowHtml(h)).join('') || '<p style="color: var(--text-muted); padding: 10px;">No screenings yet.</p>';
+      }
+
+      // =========================================================================
+      // 6-PILLAR SCREENING FORM WIZARD
+      // =========================================================================
+      function startNewScreening() {
+        state.currentHousehold = {
+          id: `HH-2026-${Math.floor(1000 + Math.random() * 9000)}`,
+          familyHeadName: '',
+          rationCardNumber: '',
+          village: 'Rampur',
+          ward: '',
+          environment: { waterSource: 'handpump', latrineAccess: 'individual_household', cookingFuel: 'clean_lpg' },
+          members: [
+            {
+              id: 'M-1', name: '', age: 24, gender: 'female', relationship: 'Self',
+              femaleHealth: { isPregnant: false },
+              childHealth: { muac: 13.0, immunizationStatus: 'up_to_date' },
+              maleHealth: {}, elderlyCare: {}, mentalHealth: {}
+            }
+          ]
+        };
+
+        state.wizardStep = 1;
+        state.activeMemberIndex = 0;
+        startTimer();
+        renderWizardStep();
+        switchTab('screening');
+      }
+
+      function startTimer() {
+        state.surveyStartTime = Date.now();
+        if (state.surveyTimerInterval) clearInterval(state.surveyTimerInterval);
+        state.surveyTimerInterval = setInterval(() => {
+          const sec = Math.floor((Date.now() - state.surveyStartTime) / 1000);
+          const m = Math.floor(sec / 60);
+          const s = sec % 60;
+          const display = document.getElementById('survey-timer-display');
+          if (display) {
+            display.innerText = `Pace: ${m}:${s < 10 ? '0' : ''}${s} (Target < 10m)`;
+          }
+        }, 1000);
+      }
+
+      function renderWizardStep() {
+        for (let i = 1; i <= 4; i++) {
+          const stepEl = document.getElementById(`step-indicator-${i}`);
+          const contentEl = document.getElementById(`wizard-step-${i}`);
+          if (stepEl) {
+            stepEl.className = i === state.wizardStep ? 'step-item active' : i < state.wizardStep ? 'step-item completed' : 'step-item';
+          }
+          if (contentEl) {
+            contentEl.style.display = i === state.wizardStep ? 'block' : 'none';
+          }
+        }
+
+        const prevBtn = document.getElementById('wizard-btn-prev');
+        const nextBtn = document.getElementById('wizard-btn-next');
+        prevBtn.style.display = state.wizardStep === 1 ? 'none' : 'inline-flex';
+
+        if (state.wizardStep === 1) {
+          nextBtn.innerText = 'Next: Family Roster →';
+        } else if (state.wizardStep === 2) {
+          nextBtn.innerText = 'Next: 6-Pillars Assessment →';
+          renderFamilyRoster();
+        } else if (state.wizardStep === 3) {
+          nextBtn.innerText = 'Complete & Evaluate Triage →';
+          render6Pillars();
+          updateLiveDock();
+        } else if (state.wizardStep === 4) {
+          nextBtn.innerText = 'Finish & Return to Dashboard';
+          renderTriageSummaryStep();
+        }
+      }
+
+      function wizardNext() {
+        if (state.wizardStep === 1) {
+          const name = document.getElementById('input-hh-head-name').value.trim();
+          if (!name) {
+            showToast('Please enter the Head of Family Name', 'warning');
+            return;
+          }
+          state.currentHousehold.familyHeadName = name;
+          state.currentHousehold.rationCardNumber = document.getElementById('input-hh-ration').value.trim();
+          state.currentHousehold.village = document.getElementById('select-hh-village').value;
+          state.currentHousehold.ward = document.getElementById('input-hh-ward').value.trim();
+          state.currentHousehold.environment.waterSource = document.getElementById('select-env-water').value;
+          state.currentHousehold.environment.latrineAccess = document.getElementById('select-env-latrine').value;
+          state.currentHousehold.environment.cookingFuel = document.getElementById('select-env-fuel').value;
+
+          if (!state.currentHousehold.members[0].name) {
+            state.currentHousehold.members[0].name = name;
+          }
+          state.wizardStep = 2;
+          renderWizardStep();
+        } else if (state.wizardStep === 2) {
+          const invalid = state.currentHousehold.members.some(m => !m.name.trim() || isNaN(m.age));
+          if (invalid) {
+            showToast('Please enter valid name and age for all family members', 'warning');
+            return;
+          }
+          state.wizardStep = 3;
+          renderWizardStep();
+        } else if (state.wizardStep === 3) {
+          // Complete and evaluate
+          if (state.surveyTimerInterval) clearInterval(state.surveyTimerInterval);
+          const finalRecord = evaluateCompleteHousehold({
+            ...state.currentHousehold,
+            syncStatus: 'pending_sync',
+            updatedAt: new Date().toISOString()
+          });
+          state.currentHousehold = finalRecord;
+          state.households.unshift(finalRecord);
+          saveAllHouseholds();
+
+          if (finalRecord.overallTier === 'RED') {
+            playAlertChime();
+            showToast('CRITICAL: RED Urgent Referral Evaluated!', 'warning');
+          } else {
+            showToast('Household screening saved locally in offline storage', 'success');
+          }
+
+          state.wizardStep = 4;
+          renderWizardStep();
+          renderDashboard();
+          renderRecordsList();
+        } else if (state.wizardStep === 4) {
+          switchTab('dashboard');
+        }
+      }
+
+      function wizardPrev() {
+        if (state.wizardStep > 1) {
+          state.wizardStep--;
+          renderWizardStep();
+        }
+      }
+
+      // Family Roster
+      function renderFamilyRoster() {
+        const list = document.getElementById('family-roster-list');
+        list.innerHTML = state.currentHousehold.members.map((m, idx) => `
+          <div class="glass-panel" style="padding: 16px; margin-bottom: 12px; border-left: 4px solid var(--primary);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+              <strong>Member #${idx + 1}: ${m.name || 'Unnamed'}</strong>
+              ${state.currentHousehold.members.length > 1 ? `
+                <button class="btn-icon-toggle" style="width: 28px; height: 28px; color: #ef4444;" onclick="SwasthyaStandalone.removeMember(${idx})">&times;</button>
+              ` : ''}
+            </div>
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label">Full Name</label>
+                <input type="text" class="form-input" value="${m.name}" oninput="SwasthyaStandalone.updateMember(${idx}, 'name', this.value)" placeholder="e.g. Geeta Devi" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Age (Years)</label>
+                <input type="number" step="0.1" class="form-input" value="${m.age}" oninput="SwasthyaStandalone.updateMember(${idx}, 'age', this.value)" placeholder="Age" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Gender</label>
+                <select class="form-select" onchange="SwasthyaStandalone.updateMember(${idx}, 'gender', this.value)">
+                  <option value="female" ${m.gender === 'female' ? 'selected' : ''}>Female</option>
+                  <option value="male" ${m.gender === 'male' ? 'selected' : ''}>Male</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Relationship to Head</label>
+                <input type="text" class="form-input" value="${m.relationship || ''}" oninput="SwasthyaStandalone.updateMember(${idx}, 'relationship', this.value)" placeholder="e.g. Wife, Son" />
+              </div>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      function addMember() {
+        state.currentHousehold.members.push({
+          id: `M-${state.currentHousehold.members.length + 1}`,
+          name: '',
+          age: 26,
+          gender: 'male',
+          relationship: 'Member',
+          femaleHealth: {}, childHealth: { muac: 13.0, immunizationStatus: 'up_to_date' },
+          maleHealth: {}, elderlyCare: {}, mentalHealth: {}
+        });
+        renderFamilyRoster();
+      }
+
+      function removeMember(idx) {
+        if (state.currentHousehold.members.length > 1) {
+          state.currentHousehold.members.splice(idx, 1);
+          renderFamilyRoster();
+        }
+      }
+
+      function updateMember(idx, field, val) {
+        state.currentHousehold.members[idx][field] = val;
+      }
+
+      // =========================================================================
+      // DYNAMIC 6-PILLAR RENDERING (SMART CONDITIONAL BRANCHING)
+      // =========================================================================
+      function render6Pillars() {
+        const members = state.currentHousehold.members;
+        if (state.activeMemberIndex >= members.length) state.activeMemberIndex = 0;
+        const currentMember = members[state.activeMemberIndex];
+
+        // Member tabs
+        document.getElementById('pillar-member-switcher').innerHTML = members.map((m, idx) => `
+          <button class="nav-tab-btn ${idx === state.activeMemberIndex ? 'active' : ''}" onclick="SwasthyaStandalone.setActiveMember(${idx})">
+            ${m.name || `Member #${idx+1}`} (${m.age}y ${m.gender === 'female' ? 'F' : 'M'})
+          </button>
+        `).join('');
+
+        const app = getApplicablePillars(currentMember.age, currentMember.gender);
+        const container = document.getElementById('pillar-questions-container');
+
+        const f = currentMember.femaleHealth || {};
+        const c = currentMember.childHealth || {};
+        const male = currentMember.maleHealth || {};
+        const e = currentMember.elderlyCare || {};
+        const mh = currentMember.mentalHealth || {};
+
+        container.innerHTML = `
+          <!-- Pillar 1: Household -->
+          <div class="glass-panel" style="margin-bottom: 14px;">
+            <h4 style="font-size: 1rem; font-weight: 800; color: #38bdf8;">Pillar 1: Environmental Health Factors</h4>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 8px;">Water: ${state.currentHousehold.environment.waterSource} | Latrine: ${state.currentHousehold.environment.latrineAccess} | Fuel: ${state.currentHousehold.environment.cookingFuel}</p>
+          </div>
+
+          <!-- Pillar 2: Female Health (Conditional) -->
+          ${app.femaleHealth ? `
+            <div class="glass-panel" style="border-left: 4px solid #ec4899; margin-bottom: 14px;">
+              <h4 style="font-size: 1rem; font-weight: 800; color: #f472b6; margin-bottom: 10px;">Pillar 2: Female Health (Maternal & Reproductive)</h4>
+              
+              <div class="form-group" style="margin-bottom: 14px;">
+                <label class="form-label">Is this member currently pregnant?</label>
+                <div class="option-cards-group">
+                  <div class="option-card ${f.isPregnant ? 'selected' : ''}" onclick="SwasthyaStandalone.setMemberField('femaleHealth', 'isPregnant', true)">
+                    <input type="radio" name="isPregnant" ${f.isPregnant ? 'checked' : ''} />
+                    <strong>Yes, Currently Pregnant</strong>
+                  </div>
+                  <div class="option-card ${!f.isPregnant ? 'selected' : ''}" onclick="SwasthyaStandalone.setMemberField('femaleHealth', 'isPregnant', false)">
+                    <input type="radio" name="isPregnant" ${!f.isPregnant ? 'checked' : ''} />
+                    <strong>No, Non-Pregnant</strong>
+                  </div>
+                </div>
+              </div>
+
+              ${f.isPregnant ? `
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label class="form-label">Gestational Months (1-9)</label>
+                    <input type="number" min="1" max="9" class="form-input" value="${f.gestationalMonths || 6}" oninput="SwasthyaStandalone.setMemberField('femaleHealth', 'gestationalMonths', this.value)" />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">ANC Checkups Completed</label>
+                    <input type="number" min="0" class="form-input" value="${f.ancCount || 2}" oninput="SwasthyaStandalone.setMemberField('femaleHealth', 'ancCount', this.value)" />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Systolic BP (mmHg)</label>
+                    <input type="number" class="form-input" value="${f.systolicBP || 120}" oninput="SwasthyaStandalone.setMemberField('femaleHealth', 'systolicBP', this.value)" />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Diastolic BP (mmHg)</label>
+                    <input type="number" class="form-input" value="${f.diastolicBP || 80}" oninput="SwasthyaStandalone.setMemberField('femaleHealth', 'diastolicBP', this.value)" />
+                  </div>
+                </div>
+
+                <div class="form-group" style="margin-top: 10px;">
+                  <label class="form-label" style="color: #ef4444; font-weight: 800;">CRITICAL OBSTETRIC DANGER SIGNS:</label>
+                  <div class="option-cards-group">
+                    <div class="option-card ${f.activeVaginalBleeding ? 'danger-selected' : ''}" onclick="SwasthyaStandalone.toggleMemberField('femaleHealth', 'activeVaginalBleeding')">
+                      <input type="checkbox" ${f.activeVaginalBleeding ? 'checked' : ''} />
+                      <span>Active Vaginal Bleeding</span>
+                    </div>
+                    <div class="option-card ${f.convulsionsOrFits ? 'danger-selected' : ''}" onclick="SwasthyaStandalone.toggleMemberField('femaleHealth', 'convulsionsOrFits')">
+                      <input type="checkbox" ${f.convulsionsOrFits ? 'checked' : ''} />
+                      <span>Convulsions / Fits (Eclampsia)</span>
+                    </div>
+                    <div class="option-card ${f.severeHeadacheBlurredVision ? 'danger-selected' : ''}" onclick="SwasthyaStandalone.toggleMemberField('femaleHealth', 'severeHeadacheBlurredVision')">
+                      <input type="checkbox" ${f.severeHeadacheBlurredVision ? 'checked' : ''} />
+                      <span>Severe Headache / Vision Loss</span>
+                    </div>
+                  </div>
+                </div>
+              ` : `
+                <div class="form-group">
+                  <label class="form-label">Reproductive Warning Signs:</label>
+                  <div class="option-cards-group">
+                    <div class="option-card ${f.breastLumpHardIrregular ? 'danger-selected' : ''}" onclick="SwasthyaStandalone.toggleMemberField('femaleHealth', 'breastLumpHardIrregular')">
+                      <input type="checkbox" ${f.breastLumpHardIrregular ? 'checked' : ''} />
+                      <span>Hard / Irregular Breast Lump</span>
+                    </div>
+                    <div class="option-card ${f.postMenopausalBleeding ? 'danger-selected' : ''}" onclick="SwasthyaStandalone.toggleMemberField('femaleHealth', 'postMenopausalBleeding')">
+                      <input type="checkbox" ${f.postMenopausalBleeding ? 'checked' : ''} />
+                      <span>Post-Menopausal Bleeding</span>
+                    </div>
+                  </div>
+                </div>
+              `}
+            </div>
+          ` : `
+            <div class="pillar-skip-notice">
+              <strong>Pillar 2 (Female Health) Skipped:</strong> Member is ${currentMember.gender === 'male' ? 'Male' : `Age ${currentMember.age} (< 12 years)`}.
+            </div>
+          `}
+
+          <!-- Pillar 3: Child Health (Conditional) -->
+          ${app.childHealth ? `
+            <div class="glass-panel" style="border-left: 4px solid #f59e0b; margin-bottom: 14px;">
+              <h4 style="font-size: 1rem; font-weight: 800; color: #fbbf24; margin-bottom: 10px;">Pillar 3: Child Health & IMNCI (Age 0 - 5 Years)</h4>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label class="form-label">
+                    <span>MUAC Measurement (cm)</span>
+                    <span class="badge ${Number(c.muac) < 11.5 ? 'badge-red' : Number(c.muac) <= 12.5 ? 'badge-yellow' : 'badge-green'}">
+                      ${Number(c.muac) < 11.5 ? 'SAM (<11.5)' : Number(c.muac) <= 12.5 ? 'MAM (11.5-12.5)' : 'Normal (>12.5)'}
+                    </span>
+                  </label>
+                  <input type="number" step="0.1" class="form-input" value="${c.muac || 13.0}" oninput="SwasthyaStandalone.setMemberField('childHealth', 'muac', this.value)" placeholder="e.g. 11.2 or 13.5" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Immunization Status</label>
+                  <select class="form-select" onchange="SwasthyaStandalone.setMemberField('childHealth', 'immunizationStatus', this.value)">
+                    <option value="up_to_date" ${c.immunizationStatus === 'up_to_date' ? 'selected' : ''}>Up to Date for Age</option>
+                    <option value="missed_essential" ${c.immunizationStatus === 'missed_essential' ? 'selected' : ''}>Missed Doses (Pentavalent/MR)</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Diarrhea Duration (Days)</label>
+                  <input type="number" min="0" class="form-input" value="${c.diarrheaDays || 0}" oninput="SwasthyaStandalone.setMemberField('childHealth', 'diarrheaDays', this.value)" />
+                </div>
+              </div>
+
+              <div class="form-group" style="margin-top: 10px;">
+                <label class="form-label" style="color: #ef4444; font-weight: 800;">IMNCI GENERAL DANGER SIGNS:</label>
+                <div class="option-cards-group">
+                  <div class="option-card ${c.unableToFeedOrDrink ? 'danger-selected' : ''}" onclick="SwasthyaStandalone.toggleMemberField('childHealth', 'unableToFeedOrDrink')">
+                    <input type="checkbox" ${c.unableToFeedOrDrink ? 'checked' : ''} />
+                    <span>Unable to Drink / Breastfeed</span>
+                  </div>
+                  <div class="option-card ${c.chestIndrawing ? 'danger-selected' : ''}" onclick="SwasthyaStandalone.toggleMemberField('childHealth', 'chestIndrawing')">
+                    <input type="checkbox" ${c.chestIndrawing ? 'checked' : ''} />
+                    <span>Chest Indrawing / Stridor</span>
+                  </div>
+                  <div class="option-card ${c.bilateralPedalEdema ? 'danger-selected' : ''}" onclick="SwasthyaStandalone.toggleMemberField('childHealth', 'bilateralPedalEdema')">
+                    <input type="checkbox" ${c.bilateralPedalEdema ? 'checked' : ''} />
+                    <span>Bilateral Pedal Edema</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ` : `
+            <div class="pillar-skip-notice">
+              <strong>Pillar 3 (Child Health) Skipped:</strong> Member age is ${currentMember.age} (&gt; 5 years).
+            </div>
+          `}
+
+          <!-- Pillar 4: Male Health (Conditional) -->
+          ${app.maleHealth ? `
+            <div class="glass-panel" style="border-left: 4px solid #3b82f6; margin-bottom: 14px;">
+              <h4 style="font-size: 1rem; font-weight: 800; color: #60a5fa; margin-bottom: 10px;">Pillar 4: Adult Male Health (Age 18+)</h4>
+              <div class="form-group">
+                <label class="form-label" style="color: #ef4444; font-weight: 800;">CARDIOVASCULAR & EMERGENCY SIGNS:</label>
+                <div class="option-cards-group">
+                  <div class="option-card ${male.crushingChestPainSweating ? 'danger-selected' : ''}" onclick="SwasthyaStandalone.toggleMemberField('maleHealth', 'crushingChestPainSweating')">
+                    <input type="checkbox" ${male.crushingChestPainSweating ? 'checked' : ''} />
+                    <span>Chest Pain + Left Arm Pain / Sweating</span>
+                  </div>
+                  <div class="option-card ${male.suddenSlurredSpeechWeakness ? 'danger-selected' : ''}" onclick="SwasthyaStandalone.toggleMemberField('maleHealth', 'suddenSlurredSpeechWeakness')">
+                    <input type="checkbox" ${male.suddenSlurredSpeechWeakness ? 'checked' : ''} />
+                    <span>Sudden Slurred Speech / Facial Droop</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-group" style="margin-top: 10px;">
+                <label class="form-label">CHRONIC & INFECTIOUS SCREENING:</label>
+                <div class="option-cards-group">
+                  <div class="option-card ${male.coughOverTwoWeeks ? 'selected' : ''}" onclick="SwasthyaStandalone.toggleMemberField('maleHealth', 'coughOverTwoWeeks')">
+                    <input type="checkbox" ${male.coughOverTwoWeeks ? 'checked' : ''} />
+                    <span>Persistent Cough > 2 Weeks (TB Suspect)</span>
+                  </div>
+                  <div class="option-card ${male.heavyTobaccoAlcohol ? 'selected' : ''}" onclick="SwasthyaStandalone.toggleMemberField('maleHealth', 'heavyTobaccoAlcohol')">
+                    <input type="checkbox" ${male.heavyTobaccoAlcohol ? 'checked' : ''} />
+                    <span>Heavy Bidi / Gutkha / Alcohol</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ` : `
+            <div class="pillar-skip-notice">
+              <strong>Pillar 4 (Male Health) Skipped:</strong> Member is ${currentMember.gender === 'female' ? 'Female' : `Age ${currentMember.age} (< 18 years)`}.
+            </div>
+          `}
+
+          <!-- Pillar 5: Elderly Care (Conditional) -->
+          ${app.elderlyCare ? `
+            <div class="glass-panel" style="border-left: 4px solid #a855f7; margin-bottom: 14px;">
+              <h4 style="font-size: 1rem; font-weight: 800; color: #c084fc; margin-bottom: 10px;">Pillar 5: Elderly Care (Age 60+)</h4>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label class="form-label">Systolic BP (mmHg)</label>
+                  <input type="number" class="form-input" value="${e.systolicBP || 130}" oninput="SwasthyaStandalone.setMemberField('elderlyCare', 'systolicBP', this.value)" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Diastolic BP (mmHg)</label>
+                  <input type="number" class="form-input" value="${e.diastolicBP || 80}" oninput="SwasthyaStandalone.setMemberField('elderlyCare', 'diastolicBP', this.value)" />
+                </div>
+              </div>
+              <div class="option-cards-group" style="margin-top: 10px;">
+                <div class="option-card ${e.acuteFallInabilityToWalk ? 'danger-selected' : ''}" onclick="SwasthyaStandalone.toggleMemberField('elderlyCare', 'acuteFallInabilityToWalk')">
+                  <input type="checkbox" ${e.acuteFallInabilityToWalk ? 'checked' : ''} />
+                  <span>Recent Fall with Inability to Walk</span>
+                </div>
+                <div class="option-card ${e.visionLossCataract ? 'selected' : ''}" onclick="SwasthyaStandalone.toggleMemberField('elderlyCare', 'visionLossCataract')">
+                  <input type="checkbox" ${e.visionLossCataract ? 'checked' : ''} />
+                  <span>Dense Cataract / Severe Vision Loss</span>
+                </div>
+              </div>
+            </div>
+          ` : `
+            <div class="pillar-skip-notice">
+              <strong>Pillar 5 (Elderly Care) Skipped:</strong> Member age is ${currentMember.age} (< 60 years).
+            </div>
+          `}
+
+          <!-- Pillar 6: Mental Health (Conditional) -->
+          ${app.mentalHealth ? `
+            <div class="glass-panel" style="border-left: 4px solid #22c55e; margin-bottom: 14px;">
+              <h4 style="font-size: 1rem; font-weight: 800; color: #4ade80; margin-bottom: 10px;">Pillar 6: Mental Health & Psychosocial (Age 15+)</h4>
+              <div class="option-card ${mh.activeSuicideIdeationOrSelfHarm ? 'danger-selected' : ''}" onclick="SwasthyaStandalone.toggleMemberField('mentalHealth', 'activeSuicideIdeationOrSelfHarm')" style="margin-bottom: 10px;">
+                <input type="checkbox" ${mh.activeSuicideIdeationOrSelfHarm ? 'checked' : ''} />
+                <strong style="color: #ef4444;">Expressed Thoughts of Self-Harm / Wanting to End Life (Urgent Tele-MANAS)</strong>
+              </div>
+              <div class="form-group">
+                <label class="form-label">PHQ-2 Depression Screening: Feeling down, depressed, or hopeless?</label>
+                <select class="form-select" onchange="SwasthyaStandalone.setMemberField('mentalHealth', 'phqScore', this.value)">
+                  <option value="0" ${Number(mh.phqScore || 0) === 0 ? 'selected' : ''}>0 - Not at all (Normal Coping)</option>
+                  <option value="2" ${Number(mh.phqScore) === 2 ? 'selected' : ''}>2 - Several days</option>
+                  <option value="4" ${Number(mh.phqScore) === 4 ? 'selected' : ''}>4 - More than half the days (Distress)</option>
+                  <option value="6" ${Number(mh.phqScore) === 6 ? 'selected' : ''}>6 - Nearly every day (Severe Depression)</option>
+                </select>
+              </div>
+            </div>
+          ` : `
+            <div class="pillar-skip-notice">
+              <strong>Pillar 6 (Mental Health) Skipped:</strong> Member age is ${currentMember.age} (< 15 years).
+            </div>
+          `}
+        `;
+      }
+
+      function setActiveMember(idx) {
+        state.activeMemberIndex = idx;
+        render6Pillars();
+        updateLiveDock();
+      }
+
+      function setMemberField(pillar, field, val) {
+        const m = state.currentHousehold.members[state.activeMemberIndex];
+        m[pillar] = m[pillar] || {};
+        m[pillar][field] = val;
+        render6Pillars();
+        updateLiveDock();
+      }
+
+      function toggleMemberField(pillar, field) {
+        const m = state.currentHousehold.members[state.activeMemberIndex];
+        m[pillar] = m[pillar] || {};
+        m[pillar][field] = !m[pillar][field];
+        render6Pillars();
+        updateLiveDock();
+      }
+
+      function updateLiveDock() {
+        const evalRes = evaluateCompleteHousehold(state.currentHousehold);
+        const dock = document.getElementById('live-triage-dock-mount');
+        if (!dock) return;
+
+        let flagText = 'All parameters within routine limits';
+        if (evalRes.allRedFlags.length > 0) {
+          flagText = evalRes.allRedFlags[0];
+          playAlertChime();
+        } else if (evalRes.overallTier === 'YELLOW') {
+          flagText = 'Moderate clinical follow-up required within 48-72h';
+        }
+
+        dock.innerHTML = `
+          <div class="live-triage-dock">
+            <div>
+              <span class="badge ${evalRes.overallBadgeClass}" style="font-size: 0.85rem; padding: 5px 12px;">
+                ${evalRes.overallTier === 'RED' ? '🚨 RED ALERT' : evalRes.overallTier === 'YELLOW' ? '⚠️ YELLOW RISK' : '✅ GREEN NORMAL'}
+              </span>
+              <div style="font-size: 0.85rem; font-weight: 700; margin-top: 4px;">${flagText}</div>
+            </div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); align-self: center;">
+              ${evalRes.members.length} Member(s) Assessed
+            </div>
+          </div>
+        `;
+      }
+
+      // Step 4 Summary
+      function renderTriageSummaryStep() {
+        const hh = state.currentHousehold;
+        const container = document.getElementById('wizard-step-4');
+
+        container.innerHTML = `
+          <div class="glass-panel" style="border-top: 6px solid ${hh.overallTier === 'RED' ? 'var(--triage-red)' : hh.overallTier === 'YELLOW' ? 'var(--triage-yellow)' : 'var(--triage-green)'};">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
+              <div>
+                <span class="badge ${hh.overallBadgeClass}" style="font-size: 0.9rem; padding: 6px 14px;">
+                  ${hh.overallTier} - ${hh.overallTierLabel}
+                </span>
+                <h3 style="font-size: 1.35rem; font-weight: 800; margin-top: 8px;">Household Head: ${hh.familyHeadName}</h3>
+                <p style="font-size: 0.82rem; color: var(--text-muted);">ID: ${hh.id} | Village: ${hh.village} | Catchment: Sub-Center ${hh.village}</p>
+              </div>
+              <button class="btn-primary-action" onclick="SwasthyaStandalone.openReferralModal('${hh.id}')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>
+                <span>View & Print Referral Slip</span>
+              </button>
+            </div>
+
+            ${hh.allRedFlags && hh.allRedFlags.length > 0 ? `
+              <div class="slip-danger-box">
+                <strong style="color: #991b1b; display: block; margin-bottom: 4px;">CRITICAL DANGER SIGNS DETECTED:</strong>
+                <ul style="padding-left: 20px; font-size: 0.85rem; color: #7f1d1d;">
+                  ${hh.allRedFlags.map(f => `<li>${f}</li>`).join('')}
+                </ul>
+              </div>
+            ` : ''}
+
+            ${hh.allImmediateActions && hh.allImmediateActions.length > 0 ? `
+              <div class="slip-action-box">
+                <strong style="color: #166534; display: block; margin-bottom: 4px;">IMMEDIATE ACTIONS FOR ASHA WORKER:</strong>
+                <ul style="padding-left: 20px; font-size: 0.85rem; color: #14532d;">
+                  ${hh.allImmediateActions.map(a => `<li>${a}</li>`).join('')}
+                </ul>
+              </div>
+            ` : ''}
+
+            <h4 style="font-weight: 800; font-size: 0.95rem; margin-bottom: 10px;">Individual Member Breakdown:</h4>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              ${hh.members.map(m => `
+                <div style="padding: 10px 14px; background: var(--surface-card); border-radius: var(--radius-sm); border-left: 4px solid ${m.evaluation.tier === 'RED' ? 'var(--triage-red)' : m.evaluation.tier === 'YELLOW' ? 'var(--triage-yellow)' : 'var(--triage-green)'}; display: flex; justify-content: space-between; align-items: center;">
+                  <div>
+                    <strong>${m.name}</strong> (${m.age}y ${m.gender})
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">${m.evaluation.redFlags.length ? m.evaluation.redFlags.join(', ') : m.evaluation.yellowFlags.length ? m.evaluation.yellowFlags.join(', ') : 'Routine healthy parameters'}</div>
+                  </div>
+                  <span class="badge ${m.evaluation.tierClass}">${m.evaluation.tier}</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }
+
+      // =========================================================================
+      // SAVED OFFLINE RECORDS LIST
+      // =========================================================================
+      function renderRecordsList() {
+        const container = document.getElementById('records-list-container');
+        if (!container) return;
+
+        const q = (document.getElementById('record-search-input')?.value || '').toLowerCase();
+        const tierFilter = document.getElementById('record-tier-filter')?.value || 'ALL';
+
+        let list = [...state.households];
+        if (tierFilter !== 'ALL') {
+          if (tierFilter === 'PENDING') {
+            list = list.filter(h => h.syncStatus !== 'synced');
+          } else {
+            list = list.filter(h => h.overallTier === tierFilter);
+          }
+        }
+        if (q.trim()) {
+          list = list.filter(h => 
+            (h.familyHeadName && h.familyHeadName.toLowerCase().includes(q)) ||
+            (h.village && h.village.toLowerCase().includes(q)) ||
+            (h.rationCardNumber && h.rationCardNumber.toLowerCase().includes(q))
+          );
+        }
+
+        if (list.length === 0) {
+          container.innerHTML = '<div class="glass-panel" style="text-align: center; padding: 24px; color: var(--text-muted);">No matching screening records found.</div>';
+          return;
+        }
+
+        container.innerHTML = list.map(h => createRecordRowHtml(h)).join('');
+      }
+
+      function filterRecords() {
+        renderRecordsList();
+      }
+
+      function createRecordRowHtml(h) {
+        return `
+          <div class="record-item-card">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div class="record-tier-stripe ${h.overallTier}"></div>
+              <div>
+                <div style="font-weight: 800; font-size: 1rem; display: flex; align-items: center; gap: 8px;">
+                  <span>${h.familyHeadName}</span>
+                  <span class="badge ${h.overallBadgeClass}">${h.overallTier}</span>
+                  ${h.syncStatus !== 'synced' ? '<span class="badge" style="background: rgba(251,191,36,0.15); color: #fbbf24; font-size: 0.65rem;">Pending Sync</span>' : ''}
+                </div>
+                <div style="font-size: 0.78rem; color: var(--text-muted);">
+                  ID: ${h.id} • Village: ${h.village} • ${h.members.length} Member(s)
+                </div>
+              </div>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <button class="btn-sync" style="padding: 6px 12px; font-size: 0.78rem;" onclick="SwasthyaStandalone.openReferralModal('${h.id}')">
+                Referral Slip
+              </button>
+              <button class="btn-icon-toggle" style="width: 32px; height: 32px; color: #ef4444;" onclick="SwasthyaStandalone.deleteRecord('${h.id}')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
+              </button>
+            </div>
+          </div>
+        `;
+      }
+
+      function deleteRecord(id) {
+        if (confirm('Delete this screening record?')) {
+          state.households = state.households.filter(h => h.id !== id);
+          saveAllHouseholds();
+          renderDashboard();
+          renderRecordsList();
+          showToast('Record removed', 'info');
+        }
+      }
+
+      // =========================================================================
+      // REFERRAL SLIP MODAL
+      // =========================================================================
+      function openReferralModal(hhId) {
+        const hh = state.households.find(h => h.id === hhId);
+        if (!hh) return;
+
+        const targetMember = hh.members.find(m => m.evaluation.tier === 'RED') 
+          || hh.members.find(m => m.evaluation.tier === 'YELLOW') 
+          || hh.members[0];
+
+        const ev = targetMember.evaluation;
+        const slipId = `REF-2026-${Math.floor(100000 + Math.random() * 900000)}`;
+
+        const mount = document.getElementById('modal-content-mount');
+        mount.innerHTML = `
+          <div class="referral-slip-paper" id="printable-referral-slip">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #0284c7; padding-bottom: 10px; margin-bottom: 12px;">
+              <div>
+                <div style="font-size: 0.72rem; font-weight: 800; color: #0369a1; text-transform: uppercase;">National Health Mission (NHM) • Primary Care</div>
+                <h3 style="font-size: 1.25rem; font-weight: 900; color: #09131f;">Clinical Referral Slip</h3>
+                <div style="font-size: 0.75rem; color: #475569;">Slip ID: ${slipId} • Date: ${new Date().toLocaleDateString('en-IN')}</div>
+              </div>
+              <span class="badge ${ev.tierClass}" style="font-size: 0.85rem;">${ev.tier} - ${ev.tierLabel}</span>
+            </div>
+
+            <table class="slip-meta-table">
+              <tr>
+                <td class="label">Patient Name:</td>
+                <td><strong>${targetMember.name}</strong></td>
+                <td class="label">Age / Gender:</td>
+                <td>${targetMember.age}y / ${targetMember.gender}</td>
+              </tr>
+              <tr>
+                <td class="label">Household ID:</td>
+                <td>${hh.id}</td>
+                <td class="label">Village:</td>
+                <td>${hh.village}</td>
+              </tr>
+              <tr>
+                <td class="label">Referred By:</td>
+                <td>Sunita Devi (ASHA-042)</td>
+                <td class="label">Sub-Center:</td>
+                <td>Sub-Center ${hh.village}</td>
+              </tr>
+              <tr>
+                <td class="label">Destination:</td>
+                <td colspan="3"><strong style="color: #0369a1;">${ev.referralLevel}</strong></td>
+              </tr>
+              <tr>
+                <td class="label">Urgency Window:</td>
+                <td colspan="3"><span style="color: #b91c1c; font-weight: 800;">${ev.actionWindow}</span></td>
+              </tr>
+            </table>
+
+            ${ev.redFlags.length ? `
+              <div class="slip-danger-box">
+                <strong style="color: #991b1b; display: block; font-size: 0.85rem;">PRIMARY DANGER SIGNS:</strong>
+                <ul style="padding-left: 20px; font-size: 0.82rem; color: #7f1d1d;">
+                  ${ev.redFlags.map(r => `<li>${r}</li>`).join('')}
+                </ul>
+              </div>
+            ` : ev.yellowFlags.length ? `
+              <div style="background: #fef3c7; border-left: 4px solid #d97706; padding: 10px; margin-bottom: 12px; border-radius: 4px;">
+                <strong style="color: #78350f; display: block; font-size: 0.85rem;">FOLLOW-UP REASONS:</strong>
+                <ul style="padding-left: 20px; font-size: 0.82rem; color: #78350f;">
+                  ${ev.yellowFlags.map(y => `<li>${y}</li>`).join('')}
+                </ul>
+              </div>
+            ` : ''}
+
+            ${ev.actions.length ? `
+              <div class="slip-action-box">
+                <strong style="color: #166534; display: block; font-size: 0.85rem;">FIRST AID GIVEN:</strong>
+                <ul style="padding-left: 20px; font-size: 0.82rem; color: #14532d;">
+                  ${ev.actions.map(a => `<li>${a}</li>`).join('')}
+                </ul>
+              </div>
+            ` : ''}
+
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; border-top: 1px solid #cbd5e1; padding-top: 10px; font-size: 0.78rem; color: #475569;">
+              <div>
+                <strong>Ambulance Helpline:</strong> 108 (Free Emergency)<br/>
+                <strong>Tele-MANAS:</strong> 14416
+              </div>
+              <div style="border: 1px solid #94a3b8; padding: 6px 10px; text-align: center; border-radius: 4px; font-weight: 700;">
+                ASHA Signature Stamp
+              </div>
+            </div>
+          </div>
+
+          <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px;">
+            <button class="btn-sync" onclick="SwasthyaStandalone.closeModal()">Close</button>
+            <button class="btn-primary-action" onclick="window.print()">Print Referral Slip</button>
+          </div>
+        `;
+
+        document.getElementById('modal-overlay').classList.add('open');
+      }
+
+      function closeModal() {
+        document.getElementById('modal-overlay').classList.remove('open');
+      }
+
+      // =========================================================================
+      // SUPERVISOR SUMMARY & GIS OUTBREAK HEATMAP
+      // =========================================================================
+      function renderSupervisor() {
+        const total = state.households.length;
+        const red = state.households.filter(h => h.overallTier === 'RED').length;
+        const yellow = state.households.filter(h => h.overallTier === 'YELLOW').length;
+        const green = state.households.filter(h => h.overallTier === 'GREEN').length;
+
+        let totalPop = 0;
+        let highRiskPregnancy = 0;
+        let samCount = 0;
+        let tbCount = 0;
+        let ncdCount = 0;
+
+        const villageStats = {
+          Rampur: { total: 0, red: 0, yellow: 0, green: 0 },
+          Bilaspur: { total: 0, red: 0, yellow: 0, green: 0 },
+          Chandpur: { total: 0, red: 0, yellow: 0, green: 0 },
+          Shivpur: { total: 0, red: 0, yellow: 0, green: 0 },
+          Kalyanpur: { total: 0, red: 0, yellow: 0, green: 0 }
+        };
+
+        state.households.forEach(h => {
+          totalPop += h.members.length;
+          const v = villageStats[h.village] || villageStats['Rampur'];
+          v.total++;
+          if (h.overallTier === 'RED') v.red++;
+          else if (h.overallTier === 'YELLOW') v.yellow++;
+          else v.green++;
+
+          h.members.forEach(m => {
+            if (m.femaleHealth && m.femaleHealth.isPregnant && m.evaluation.tier === 'RED') highRiskPregnancy++;
+            if (m.childHealth && Number(m.childHealth.muac) < 11.5) samCount++;
+            if (m.maleHealth && m.maleHealth.coughOverTwoWeeks) tbCount++;
+            if (m.elderlyCare && Number(m.elderlyCare.systolicBP) >= 160) ncdCount++;
+          });
+        });
+
+        const supTotalHh = document.getElementById('sup-total-hh');
+        if (supTotalHh) supTotalHh.innerText = total;
+        document.getElementById('sup-total-ind').innerText = totalPop;
+
+        const base = total || 1;
+        document.getElementById('sup-red-pct').innerText = `${red} (${Math.round((red/base)*100)}%)`;
+        document.getElementById('sup-yellow-pct').innerText = `${yellow} (${Math.round((yellow/base)*100)}%)`;
+        document.getElementById('sup-green-pct').innerText = `${green} (${Math.round((green/base)*100)}%)`;
+
+        // Threat cards
+        document.getElementById('sup-threat-cards').innerHTML = `
+          <div class="kpi-card kpi-red">
+            <span class="kpi-label">High-Risk Pregnancies</span>
+            <span class="kpi-val" style="color: #f87171;">${highRiskPregnancy}</span>
+            <span class="kpi-meta">Eclampsia / Bleeding flags</span>
+          </div>
+          <div class="kpi-card kpi-red">
+            <span class="kpi-label">Severe Malnutrition (SAM)</span>
+            <span class="kpi-val" style="color: #f87171;">${samCount}</span>
+            <span class="kpi-meta">MUAC < 11.5 cm (NRC Referral)</span>
+          </div>
+          <div class="kpi-card kpi-yellow">
+            <span class="kpi-label">Presumptive TB Suspects</span>
+            <span class="kpi-val" style="color: #fbbf24;">${tbCount}</span>
+            <span class="kpi-meta">Cough > 2 wks (Nikshay)</span>
+          </div>
+          <div class="kpi-card kpi-yellow">
+            <span class="kpi-label">Severe HTN / NCD</span>
+            <span class="kpi-val" style="color: #fbbf24;">${ncdCount}</span>
+            <span class="kpi-meta">BP &gt; 160 mmHg</span>
+          </div>
+        `;
+
+        renderHeatmap(villageStats);
+      }
+
+      function setHeatmapLayer(layer) {
+        state.heatmapLayer = layer;
+        ['all', 'maternal', 'water', 'ncd'].forEach(l => {
+          const btn = document.getElementById(`layer-btn-${l}`);
+          if (btn) btn.classList.toggle('active', l === layer);
+        });
+        renderSupervisor();
+      }
+
+      function selectHeatmapVillage(name) {
+        state.selectedVillage = state.selectedVillage === name ? null : name;
+        renderSupervisor();
+      }
+
+      function renderHeatmap(villageStats) {
+        const mount = document.getElementById('heatmap-svg-mount');
+        if (!mount) return;
+
+        const coords = {
+          Rampur: { x: 190, y: 160, label: 'Rampur' },
+          Bilaspur: { x: 380, y: 120, label: 'Bilaspur' },
+          Chandpur: { x: 260, y: 250, label: 'Chandpur (PHC HQ)', isHq: true },
+          Shivpur: { x: 140, y: 370, label: 'Shivpur' },
+          Kalyanpur: { x: 420, y: 340, label: 'Kalyanpur' }
+        };
+
+        const nodesSvg = Object.entries(coords).map(([name, pos]) => {
+          const v = villageStats[name] || { total: 0, red: 0, yellow: 0, green: 0 };
+          let color = '#16a34a';
+          let r = 26;
+
+          if (state.heatmapLayer === 'all') {
+            if (v.red > 0) { color = '#dc2626'; r = 36; }
+            else if (v.yellow > 0) { color = '#d97706'; r = 30; }
+          } else if (state.heatmapLayer === 'maternal') {
+            color = name === 'Rampur' || name === 'Bilaspur' ? '#ef4444' : '#64748b';
+            r = name === 'Rampur' || name === 'Bilaspur' ? 34 : 20;
+          } else if (state.heatmapLayer === 'water') {
+            color = name === 'Rampur' || name === 'Bilaspur' ? '#0284c7' : '#64748b';
+            r = name === 'Rampur' || name === 'Bilaspur' ? 34 : 20;
+          } else {
+            color = name === 'Shivpur' || name === 'Chandpur' ? '#8b5cf6' : '#64748b';
+            r = name === 'Shivpur' || name === 'Chandpur' ? 32 : 20;
+          }
+
+          const isSel = state.selectedVillage === name;
+
+          return `
+            <g style="cursor: pointer;" onclick="SwasthyaStandalone.selectHeatmapVillage('${name}')">
+              <!-- Glow -->
+              <circle cx="${pos.x}" cy="${pos.y}" r="${r * 1.5}" fill="${color}" fill-opacity="0.22" />
+              <!-- Core -->
+              <circle cx="${pos.x}" cy="${pos.y}" r="${r}" fill="${color}" fill-opacity="0.9" stroke="${isSel ? '#0284c7' : '#ffffff'}" stroke-width="${isSel ? 4 : 2}" />
+              <!-- Label -->
+              <text x="${pos.x}" y="${pos.y + 5}" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="bold">${pos.isHq ? 'PHC' : v.total}</text>
+              <rect x="${pos.x - 45}" y="${pos.y + r + 5}" width="90" height="20" rx="10" fill="#ffffff" stroke="#94a3b8" stroke-width="1.5" />
+              <text x="${pos.x}" y="${pos.y + r + 19}" text-anchor="middle" fill="#0f172a" font-size="10" font-weight="800">${pos.label}</text>
+            </g>
+          `;
+        }).join('');
+
+        mount.innerHTML = `
+          <svg viewBox="0 0 540 440" class="svg-health-map">
+            <!-- Road grid -->
+            <line x1="260" y1="250" x2="190" y2="160" stroke="#94a3b8" stroke-width="2" stroke-dasharray="4,4" />
+            <line x1="260" y1="250" x2="380" y2="120" stroke="#94a3b8" stroke-width="2" stroke-dasharray="4,4" />
+            <line x1="260" y1="250" x2="140" y2="370" stroke="#94a3b8" stroke-width="2" stroke-dasharray="4,4" />
+            <line x1="260" y1="250" x2="420" y2="340" stroke="#94a3b8" stroke-width="2" stroke-dasharray="4,4" />
+            <!-- River -->
+            <path d="M 20 130 Q 150 180 230 150 T 400 170 T 520 100" fill="none" stroke="#0284c7" stroke-width="18" stroke-opacity="0.3" stroke-linecap="round" />
+            <text x="50" y="150" fill="#0369a1" font-size="9" font-style="italic" font-weight="bold">Ganga Canal</text>
+            ${nodesSvg}
+          </svg>
+        `;
+
+        const flyout = document.getElementById('heatmap-village-flyout');
+        if (state.selectedVillage && villageStats[state.selectedVillage]) {
+          const v = villageStats[state.selectedVillage];
+          flyout.innerHTML = `
+            <div class="glass-panel" style="margin-top: 10px; padding: 14px; border-left: 4px solid var(--primary);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <h4 style="font-weight: 800;">Village: ${state.selectedVillage}</h4>
+                <button class="btn-icon-toggle" style="width: 24px; height: 24px;" onclick="SwasthyaStandalone.selectHeatmapVillage(null)">&times;</button>
+              </div>
+              <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 8px;">
+                Total Households: <strong>${v.total}</strong> | Red (Urgent): <strong style="color: #f87171;">${v.red}</strong> | Yellow: <strong style="color: #fbbf24;">${v.yellow}</strong> | Green: <strong style="color: #4ade80;">${v.green}</strong>
+              </p>
+              <div style="font-size: 0.78rem; background: rgba(2,132,199,0.15); padding: 6px 10px; border-radius: 4px;">
+                <strong>PHC Directive:</strong> ${v.red > 0 ? 'Dispatch 108 Ambulance & alert MO on call.' : 'Maintain routine weekly Sub-Center outreach.'}
+              </div>
+            </div>
+          `;
+        } else {
+          flyout.innerHTML = '';
+        }
+      }
+
+      function exportJSON() {
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state.households, null, 2));
+        const a = document.createElement('a');
+        a.setAttribute("href", dataStr);
+        a.setAttribute("download", `swasthyanet_backup_${new Date().toISOString().slice(0, 10)}.json`);
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        showToast('Database exported as JSON backup file', 'success');
+      }
+
+      function showToast(msg, type = 'info') {
+        const c = document.getElementById('toast-container');
+        if (!c) return;
+        const t = document.createElement('div');
+        t.className = `toast`;
+        t.innerText = msg;
+        c.appendChild(t);
+        setTimeout(() => {
+          t.style.opacity = '0';
+          t.style.transition = 'opacity 0.3s ease';
+          setTimeout(() => t.remove(), 300);
+        }, 3200);
+      }
+
+      return {
+        init,
+        switchTab,
+        toggleOfflineMode,
+        toggleSunlightMode,
+        triggerSync,
+        startNewScreening,
+        wizardNext,
+        wizardPrev,
+        addMember,
+        removeMember,
+        updateMember,
+        setActiveMember,
+        setMemberField,
+        toggleMemberField,
+        filterRecords,
+        openReferralModal,
+        closeModal,
+        deleteRecord,
+        setHeatmapLayer,
+        selectHeatmapVillage,
+        exportJSON
+      };
+    })();
+
+    document.addEventListener('DOMContentLoaded', () => {
+      SwasthyaStandalone.init();
+    });
+  </script>
+</body>
+</html>
